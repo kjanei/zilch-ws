@@ -10,18 +10,36 @@ const createNewGame = (initialPlayer, scoreLimit = 10000) => {
   const currentPlayer = initialPlayer
     ? initialPlayer
     : Math.floor(Math.random() + 1);
+
   game = {
+    accumulatedPoints: 0, // The points accumulated, but not cashed in, on a specific turn.
     currentPlayer,
-    score: [0, 0],
-    scoreLimit,
-    history: [],
-    dice: rollDice(6),
+    dice: rollDice(),
+    history: [], // The history of moves played so far in the game
+    score: [0, 0], // Current (banked) score of both players
+    scoreLimit, // The score limit for this game.
+    selectedDice: [] // The indices of currently selected (not cashed) dice.
   };
 };
 
-const rollDice = (numDice) => {
+const rollDice = (previousDice) => {
+  if (previousDice) {
+    // Previous dice are available
+    return previousDice.map((die) => {
+      if (die.available) {
+        // If the die is available to be rolled, reroll its value.
+        return {
+          available: true,
+          value: Math.floor(Math.random() * 6) + 1,
+        };
+      }
+      return die; // Otherwise, return the used die without changing its value.
+    });
+  }
+
+  // If no previous dice are supplied, return a fresh roll of 6 dice.
   const dice = [];
-  for (let i = 0; i < numDice; i++) {
+  for (let i = 0; i < 6; i++) {
     dice.push({ value: Math.floor(Math.random() * 6) + 1, available: true });
   }
   return dice;
@@ -29,10 +47,8 @@ const rollDice = (numDice) => {
 
 // client -> dice [0,4,5]
 
-
-
-const getScoringOptions = dice => {
-  const options = [1,1,2,3,4,5]; 
+const getScoringOptions = (dice) => {
+  const options = [1, 1, 2, 3, 4, 5];
   // 1: single one die: [0], 2: 2 ones die: [0,1], 3: single 5
 
   // dice[0].value = 1/2/3/4/5/6
@@ -40,7 +56,7 @@ const getScoringOptions = dice => {
   // dice[0].available (true/false)
 
   // return list of possible options
-}
+};
 /*
 values = [0,0,0,0,0,0];
 values[0]++ // Found a 1
