@@ -21,6 +21,9 @@
           $('#m').val('');
           return false;
         });
+        socket.on('chat message', (msg) => {
+          document.write(msg);
+        });
       });
     </script>
   </body>

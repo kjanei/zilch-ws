@@ -1,32 +1,46 @@
-let app = require('express')();
-let http = require('http').createServer(app);
-let io = require('socket.io')(http);
+let app = require("express")();
+let http = require("http").createServer(app);
+let io = require("socket.io")(http);
 
 let connectedUsers = 0;
 
 let game = null;
 
-const functionName = parameters => returnValue;
-
 const createNewGame = (initialPlayer, scoreLimit = 10000) => {
-  const currentPlayer = initialPlayer ? initialPlayer : Math.floor(Math.random() + 1)
+  const currentPlayer = initialPlayer
+    ? initialPlayer
+    : Math.floor(Math.random() + 1);
   game = {
     currentPlayer,
-    score:  [0, 0],
+    score: [0, 0],
     scoreLimit,
     history: [],
     dice: rollDice(6),
-  }
-}
+  };
+};
 
-const rollDice = numDice => {
+const rollDice = (numDice) => {
   const dice = [];
-  for(let i = 0; i < numDice; i++) {
-    dice.push(Math.floor(Math.random() * 6) + 1);
+  for (let i = 0; i < numDice; i++) {
+    dice.push({ value: Math.floor(Math.random() * 6) + 1, available: true });
   }
   return dice;
-}
+};
 
+// client -> dice [0,4,5]
+
+
+
+const getScoringOptions = dice => {
+  const options = [1,1,2,3,4,5]; 
+  // 1: single one die: [0], 2: 2 ones die: [0,1], 3: single 5
+
+  // dice[0].value = 1/2/3/4/5/6
+
+  // dice[0].available (true/false)
+
+  // return list of possible options
+}
 /*
 values = [0,0,0,0,0,0];
 values[0]++ // Found a 1
@@ -43,27 +57,27 @@ else if nothing scored:
   give the "nothing" combo
 */
 
-app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/index.html');
+app.get("/", (req, res) => {
+  res.sendFile(__dirname + "/index.html");
 });
 
-io.on('connection', (socket) => {
+io.on("connection", (socket) => {
   connectedUsers++;
-  console.log('User connected at', new Date().toString());
-  socket.on('disconnect', () => {
-    console.log('User disconnected at', new Date().toString());
+  console.log("User connected at", new Date().toString());
+  socket.on("disconnect", () => {
+    console.log("User disconnected at", new Date().toString());
   });
 
-  if(connectedUsers === 2) {
+  if (connectedUsers === 2) {
     createNewGame();
-    console.log('Game created.');
+    console.log("Game created.");
   }
-  socket.on('chat message', msg => {
-    console.log('Received message:', msg)
-    io.emit('chat message', 'test');
-  })
+  socket.on("chat message", (msg) => {
+    console.log("Received message:", msg);
+    io.emit("chat message", "test");
+  });
 });
 
 http.listen(3000, () => {
-  console.log('Listening on port 3000');
+  console.log("Listening on port 3000");
 });
