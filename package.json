@@ -10,6 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "express": "^4.17.1",
+    "number-to-words": "^1.2.4",
     "socket.io": "^2.3.0"
   }
 }
