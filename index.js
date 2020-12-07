@@ -7,8 +7,6 @@ let io = require("socket.io")(http);
 // To change number to words for scoring
 let numberToWords = require("number-to-words");
 
-const { SSL_OP_SSLEAY_080_CLIENT_DH_BUG } = require("constants");
-
 let connectedUsers = 0;
 
 let game = null;
@@ -172,23 +170,28 @@ else if nothing scored:
 */
 
 app.get("/", (req, res) => {
-  res.sendFile(__dirname + "/index.html");
+  res.sendFile(__dirname + "/public/index.html");
 });
 
 io.on("connection", (socket) => {
   connectedUsers++;
   console.log("User connected at", new Date().toString());
   socket.on("disconnect", () => {
+    connectedUsers--;
     console.log("User disconnected at", new Date().toString());
   });
 
   if (connectedUsers === 2) {
     createNewGame();
+    io.emit('status', "Second player found.")
     console.log("Game created.");
   }
-  socket.on("chat message", (msg) => {
+  socket.on("rollDice", (msg) => {
     console.log("Received message:", msg);
-    io.emit("chat message", "test");
+    io.emit('status', "Rolling dice.")
+    const dice = rollDice();
+    io.emit("newDice", dice);
+    io.emit('status', "Rolled dice.")
   });
 });
 
