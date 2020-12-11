@@ -11,12 +11,45 @@ let connectedUsers = 0;
 
 let game = null;
 
+// Cheat sheet for socket.io event emission:
+// https://socket.io/docs/v3/emit-cheatsheet/index.html
+
+app.get("/", (req, res) => {
+  res.sendFile(__dirname + "/public/index.html");
+});
+
+io.on("connection", (socket) => {
+  connectedUsers++;
+  console.log("User connected at", new Date().toString());
+  socket.on("disconnect", () => {
+    connectedUsers--;
+    console.log("User disconnected at", new Date().toString());
+  });
+
+  if (connectedUsers === 2) {
+    game = createNewGame();
+    io.emit('status', "Second player found.")
+    console.log("Game created.");
+  }
+  socket.on("rollDice", (msg) => {
+    console.log("Received message:", msg);
+    io.emit('status', "Rolling dice.")
+    const dice = rollDice();
+    io.emit("newDice", dice);
+    io.emit('status', "Rolled dice.")
+  });
+});
+
+http.listen(3000, () => {
+  console.log("Listening on port 3000");
+});
+
 const createNewGame = (initialPlayer, scoreLimit = 10000) => {
   const currentPlayer = initialPlayer
     ? initialPlayer
     : Math.floor(Math.random() + 1);
 
-  game = {
+  return {
     accumulatedPoints: 0, // The points accumulated, but not cashed in, on a specific turn.
     currentPlayer,
     dice: rollDice(),
@@ -169,32 +202,4 @@ else if nothing scored:
   give the "nothing" combo
 */
 
-app.get("/", (req, res) => {
-  res.sendFile(__dirname + "/public/index.html");
-});
 
-io.on("connection", (socket) => {
-  connectedUsers++;
-  console.log("User connected at", new Date().toString());
-  socket.on("disconnect", () => {
-    connectedUsers--;
-    console.log("User disconnected at", new Date().toString());
-  });
-
-  if (connectedUsers === 2) {
-    createNewGame();
-    io.emit('status', "Second player found.")
-    console.log("Game created.");
-  }
-  socket.on("rollDice", (msg) => {
-    console.log("Received message:", msg);
-    io.emit('status', "Rolling dice.")
-    const dice = rollDice();
-    io.emit("newDice", dice);
-    io.emit('status', "Rolled dice.")
-  });
-});
-
-http.listen(3000, () => {
-  console.log("Listening on port 3000");
-});
