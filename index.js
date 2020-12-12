@@ -28,14 +28,16 @@ io.on("connection", (socket) => {
 
   if (connectedUsers === 2) {
     game = createNewGame();
-    io.emit('status', "Second player found.")
+    io.emit('status', "Second player found. New game!")
     console.log("Game created.");
-  }
-  socket.on("rollDice", (msg) => {
-    console.log("Received message:", msg);
-    io.emit('status', "Rolling dice.")
-    const dice = rollDice();
-    io.emit("newDice", dice);
+  }1
+
+  socket.on("rollDice", (dice) => {
+    console.log("Received dice:", dice);
+    io.emit('status', "Rolling dice.");
+    const remainingDice = selectDice(dice, game.dice)
+    game.dice = rollDice(remainingDice);
+    io.emit("newDice", game.dice);
     io.emit('status', "Rolled dice.")
   });
 });
@@ -56,9 +58,21 @@ const createNewGame = (initialPlayer, scoreLimit = 10000) => {
     history: [], // The history of moves played so far in the game
     score: [0, 0], // Current (banked) score of both players
     scoreLimit, // The score limit for this game.
-    selectedDice: [], // The indices of currently selected (not cashed) dice.
   };
 };
+
+const selectDice = (selection, previousDice) => {
+  const processedDice = [];
+
+  for(let i = 0; i < previousDice.length; i++) {
+    processedDice[i] = previousDice[i];
+    if(previousDice[i].available && selection[i]) {
+      processedDice[i].available = false;
+    }
+  }
+  
+  return processedDice;
+}
 
 const rollDice = (previousDice) => {
   if (previousDice) {

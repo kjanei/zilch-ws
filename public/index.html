@@ -21,15 +21,26 @@
             label.innerHTML = die.value;
           }
         });
+
         $('#rollDice').click(() => {
           let dice = [];
           for(let i = 0; i < 6; i++) {
-            dice[i] = document.getElementById(`dice${i}`).checked;
-            console.log(dice);
+            const checkBox = document.getElementById(`dice${i}`);
+            dice[i] = checkBox.checked;
           }
           socket.emit('rollDice', dice);
-          $('#status').val('Submitted roll');
-        })
+          socket.emit('status', 'Submitted roll');
+        });
+
+        $('#cashDice').click(() => {
+          let dice = [];
+          for(let i = 0; i < 6; i++) {
+            const checkBox = document.getElementById(`dice${i}`);
+            dice[i] = checkBox.checked;
+          }
+          socket.emit('cashDice', dice);
+          socket.emit('status', 'Cashed in');
+        });
 
       });
     </script>
@@ -57,17 +68,19 @@
     <input type="checkbox" id="dice5" name="dice5" disabled />
     <label for="dice5" id="label5">Waiting to roll..</label>
     <br />
+    <br />
     <button id="rollDice">Submit dice selection & roll dice</button>
     <br />
-    <button id="rollDice">Submit dice selection & cash in dice</button>
+    <button id="cashDice">Submit dice selection & cash in dice</button>
     <br />
-    <label for="scoreValue">Current turn score: </label>
+    <br />
+    <label for="currentScore">Current turn score: </label>
     <input type="text" disabled id="currentScore" value="0" />
     <br />
-    <label for="scoreValue">Player 1 score: </label>
+    <label for="p1Score">Player 1 score: </label>
     <input type="text" disabled id="p1Score" value="0" />
     <br />
-    <label for="scoreValue">Player 2 score: </label>
+    <label for="p2Score">Player 2 score: </label>
     <input type="text" disabled id="p2Score" value="0" />
   </body>
 </html>
