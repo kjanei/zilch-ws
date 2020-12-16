@@ -1,19 +1,30 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
   <head>
     <title>Zilch</title>
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
     <script>
+
       $(() => {
-        var socket = io();
-        socket.on('status', (msg) => {
-          $('#status').val(msg);
+        let socket = io();
+        let playerNumber = null;
+
+        // Update status
+        socket.on("status", (msg) => {
+          $("#status").val(msg);
         });
-        socket.on('newDice', (dice) => {
-          console.log('new dice');
-          console.log(dice);
-          for(let i = 0; i < dice.length; i++) {
+
+        // Listen to player number assignments
+        socket.on("assignPlayerNumber", (number) => {
+          if (playerNumber === null) {
+            playerNumber = number;
+            document.getElementById(`playerNumber`).innerHTML = playerNumber;
+          }
+        });
+
+        socket.on("newDice", (dice) => {
+          for (let i = 0; i < dice.length; i++) {
             let die = dice[i];
             const checkBox = document.getElementById(`dice${i}`);
             const label = document.getElementById(`label${i}`);
@@ -22,31 +33,30 @@
           }
         });
 
-        $('#rollDice').click(() => {
+        $("#rollDice").click(() => {
           let dice = [];
-          for(let i = 0; i < 6; i++) {
+          for (let i = 0; i < 6; i++) {
             const checkBox = document.getElementById(`dice${i}`);
             dice[i] = checkBox.checked;
           }
-          socket.emit('rollDice', dice);
-          socket.emit('status', 'Submitted roll');
+          socket.emit("rollDice", dice);
+          socket.emit("status", "Submitted roll");
         });
 
-        $('#cashDice').click(() => {
+        $("#cashDice").click(() => {
           let dice = [];
-          for(let i = 0; i < 6; i++) {
+          for (let i = 0; i < 6; i++) {
             const checkBox = document.getElementById(`dice${i}`);
             dice[i] = checkBox.checked;
           }
-          socket.emit('cashDice', dice);
-          socket.emit('status', 'Cashed in');
+          socket.emit("cashDice", dice);
+          socket.emit("status", "Cashed in");
         });
-
       });
     </script>
   </head>
   <body>
-    Status: 
+    Status:
     <input disabled id="status" value="initial state" />
     <br />
     <br />
@@ -76,6 +86,8 @@
     <br />
     <label for="currentScore">Current turn score: </label>
     <input type="text" disabled id="currentScore" value="0" />
+    <br />
+    <p>Player number: <span id="playerNumber">Unassigned</span></p>
     <br />
     <label for="p1Score">Player 1 score: </label>
     <input type="text" disabled id="p1Score" value="0" />

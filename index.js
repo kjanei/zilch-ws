@@ -21,6 +21,7 @@ app.get("/", (req, res) => {
 io.on("connection", (socket) => {
   connectedUsers++;
   console.log("User connected at", new Date().toString());
+  io.emit('assignPlayerNumber', connectedUsers);
   socket.on("disconnect", () => {
     connectedUsers--;
     console.log("User disconnected at", new Date().toString());
@@ -29,6 +30,7 @@ io.on("connection", (socket) => {
   if (connectedUsers === 2) {
     game = createNewGame();
     io.emit('status', "Second player found. New game!")
+    io.emit("newDice", game.dice);
     console.log("Game created.");
   }1
 
