@@ -19,11 +19,12 @@
         socket.on("assignPlayerNumber", (number) => {
           if (playerNumber === null) {
             playerNumber = number;
-            document.getElementById(`playerNumber`).innerHTML = playerNumber;
+            document.getElementById('playerNumber').innerHTML = playerNumber;
           }
         });
 
         socket.on("newDice", (dice) => {
+          $("#status").val(`Status: \n${JSON.stringify(dice)}`);
           for (let i = 0; i < dice.length; i++) {
             let die = dice[i];
             const checkBox = document.getElementById(`dice${i}`);
@@ -57,7 +58,8 @@
   </head>
   <body>
     Status:
-    <input disabled id="status" value="initial state" />
+    <br />
+    <textarea rows="10" disabled id="status" value="initial state"></textarea>
     <br />
     <br />
     <input type="checkbox" id="dice0" name="dice0" disabled />
@@ -88,7 +90,6 @@
     <input type="text" disabled id="currentScore" value="0" />
     <br />
     <p>Player number: <span id="playerNumber">Unassigned</span></p>
-    <br />
     <label for="p1Score">Player 1 score: </label>
     <input type="text" disabled id="p1Score" value="0" />
     <br />

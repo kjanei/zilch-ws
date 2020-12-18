@@ -36,9 +36,10 @@ io.on("connection", (socket) => {
 
   socket.on("rollDice", (dice) => {
     console.log("Received dice:", dice);
+    console.log(game);
     io.emit('status', "Rolling dice.");
-    const remainingDice = selectDice(dice, game.dice)
-    game.dice = rollDice(remainingDice);
+    // const remainingDice = selectDice(dice, game.dice)
+    game.dice = rollDice();
     io.emit("newDice", game.dice);
     io.emit('status', "Rolled dice.")
   });
