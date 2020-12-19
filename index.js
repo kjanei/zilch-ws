@@ -21,7 +21,7 @@ app.get("/", (req, res) => {
 io.on("connection", (socket) => {
   connectedUsers++;
   console.log("User connected at", new Date().toString());
-  io.emit('assignPlayerNumber', connectedUsers);
+  io.emit("assignPlayerNumber", connectedUsers);
   socket.on("disconnect", () => {
     connectedUsers--;
     console.log("User disconnected at", new Date().toString());
@@ -29,19 +29,31 @@ io.on("connection", (socket) => {
 
   if (connectedUsers === 2) {
     game = createNewGame();
-    io.emit('status', "Second player found. New game!")
+    io.emit("status", "Second player found. New game!");
     io.emit("newDice", game.dice);
     console.log("Game created.");
-  }1
+  }
+  1;
 
-  socket.on("rollDice", (dice) => {
-    console.log("Received dice:", dice);
-    console.log(game);
-    io.emit('status', "Rolling dice.");
-    // const remainingDice = selectDice(dice, game.dice)
-    game.dice = rollDice();
+  socket.on("rollDice", (selectedDice) => {
+    io.emit("status", "Rolling dice.");
+
+    let unscoredDice = [];
+
+    for (let i = 0; i < 6; i++) {
+      console.log("selection: ", selectedDice[i]);
+      console.log("die before", JSON.stringify(game.dice[i]));
+
+      if (game.dice[i].available && selectedDice[i]) {
+        game.dice[i].available = false;
+        unscoredDice.push(game.dice[i].value);
+      }
+    }
+
+    game.dice = rollDice(game.dice);
+
     io.emit("newDice", game.dice);
-    io.emit('status', "Rolled dice.")
+    io.emit("status", "Rolled dice.");
   });
 });
 
@@ -67,15 +79,15 @@ const createNewGame = (initialPlayer, scoreLimit = 10000) => {
 const selectDice = (selection, previousDice) => {
   const processedDice = [];
 
-  for(let i = 0; i < previousDice.length; i++) {
+  for (let i = 0; i < previousDice.length; i++) {
     processedDice[i] = previousDice[i];
-    if(previousDice[i].available && selection[i]) {
+    if (previousDice[i].available && selection[i]) {
       processedDice[i].available = false;
     }
   }
-  
+
   return processedDice;
-}
+};
 
 const rollDice = (previousDice) => {
   if (previousDice) {
@@ -218,5 +230,3 @@ if there are 6 dice:
 else if nothing scored:
   give the "nothing" combo
 */
-
-

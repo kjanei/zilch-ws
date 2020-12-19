@@ -5,7 +5,6 @@
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
     <script>
-
       $(() => {
         let socket = io();
         let playerNumber = null;
@@ -19,7 +18,7 @@
         socket.on("assignPlayerNumber", (number) => {
           if (playerNumber === null) {
             playerNumber = number;
-            document.getElementById('playerNumber').innerHTML = playerNumber;
+            document.getElementById("playerNumber").innerHTML = playerNumber;
           }
         });
 
