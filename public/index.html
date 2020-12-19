@@ -40,6 +40,7 @@
             dice[i] = checkBox.checked;
           }
           socket.emit("rollDice", dice);
+          socket.emit("scoreDice", dice);
           socket.emit("status", "Submitted roll");
         });
 

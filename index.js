@@ -41,9 +41,6 @@ io.on("connection", (socket) => {
     let unscoredDice = [];
 
     for (let i = 0; i < 6; i++) {
-      console.log("selection: ", selectedDice[i]);
-      console.log("die before", JSON.stringify(game.dice[i]));
-
       if (game.dice[i].available && selectedDice[i]) {
         game.dice[i].available = false;
         unscoredDice.push(game.dice[i].value);
@@ -51,9 +48,11 @@ io.on("connection", (socket) => {
     }
 
     game.dice = rollDice(game.dice);
+    console.log(game.dice);
 
     io.emit("newDice", game.dice);
-    io.emit("status", "Rolled dice.");
+    options = getScoringOptions(checkDice(game.dice));
+    io.emit("status", JSON.stringify(options));
   });
 });
 
@@ -119,7 +118,7 @@ const checkDice = (dice) => {
   var availableDice = [0, 0, 0, 0, 0, 0];
 
   for (i = 0; i < dice.length; i++) {
-    if (dice[i].available == true) {
+    if (dice[i].available != true) {
       availableDice[dice[i].value - 1]++;
     }
   }
@@ -128,7 +127,6 @@ const checkDice = (dice) => {
 
 const getScoringOptions = (availableDice) => {
   var scoringOptions = [];
-
   // Special rolls
   if (availableDice.length == 6) {
     // One to six (req 6 dice)
@@ -138,10 +136,9 @@ const getScoringOptions = (availableDice) => {
         break;
       }
       if (i == 5 && availableDice[i] == 1) {
-        scoringOptions.push("One to six*");
+        scoringOptions.push({ roll: "One to six*", score: 1500 });
       }
     }
-
     // Any three pairs (req 6 dice)
     var pairCount = 0;
     for (i = 0; i < 6; i++) {
@@ -151,10 +148,9 @@ const getScoringOptions = (availableDice) => {
       }
     }
     if (pairCount == 3) {
-      scoringOptions.push("Any three pairs*");
+      scoringOptions.push({ roll: "Any three pairs*", score: 1500 });
     }
   }
-
   // Three of a kind or more
   for (i = 1; i < 6; i++) {
     // Starts at 2
@@ -162,23 +158,36 @@ const getScoringOptions = (availableDice) => {
       // While the number of available dice is still above 3, add all valid combinations
       for (h = availableDice[i]; h >= 3; h--) {
         if (i != 5) {
-          scoringOptions.push(`${h} ${numberToWords.toWords(i + 1)}s`);
+          scoringOptions.push({
+            roll: `${h} ${numberToWords.toWords(i + 1)}s`,
+            value: i * 100 * (h - 2),
+          });
         } else {
-          scoringOptions.push(`${h} ${numberToWords.toWords(i + 1)}es`); // Sixes
+          // Sixes
+          scoringOptions.push({
+            roll: `${h} ${numberToWords.toWords(i + 1)}es`,
+            value: i * 100 * (h - 2),
+          });
         }
       }
     }
-
     // Ones and Fives
     switch (availableDice[0]) {
       default:
         // While the number of available dice is still above 0, add all valid combinations
         for (i = availableDice[0]; i > 0; i--) {
           if (i == 1) {
-            scoringOptions.push("Single one");
+            scoringOptions.push({ roll: "Single one", value: 100 });
             continue;
           }
-          scoringOptions.push(`${i} ones`);
+          if (i == 2) {
+            scoringOptions.push({ roll: `${i} ones`, value: 200 });
+            continue;
+          }
+          scoringOptions.push({
+            roll: `${i} ones`,
+            value: 1000 * (i - 2),
+          });
         }
         break;
     }
@@ -187,33 +196,32 @@ const getScoringOptions = (availableDice) => {
         // While the number of available dice is still above 0, add all valid combinations
         for (i = availableDice[4]; i > 0; i--) {
           if (i == 1) {
-            scoringOptions.push("Single five");
+            scoringOptions.push({ roll: "Single five", value: 50 });
             continue;
           }
-          scoringOptions.push(`${i} fives`);
+          if (i == 2) {
+            scoringOptions.push({ roll: `${i} fives`, value: 100 });
+            continue;
+          }
+          scoringOptions.push({
+            roll: `${i} fives`,
+            value: 500 * (i - 2),
+          });
         }
         break;
     }
-
     // Checks for empty array
     if (scoringOptions.length == 0) {
       if (availableDice.length == 6) {
-        scoringOptions.push("No scoring dice"); // Combo if all dice don't give a combo
+        scoringOptions.push({ roll: "No scoring dice", value: 500 }); // Combo if all dice don't give a combo
       } else {
         scoringOptions.push("Zilch!"); // Otherwise, zilch out
       }
     }
-
-    // debugging
-    console.log(scoringOptions);
-
     // Return list of possible options
     return scoringOptions;
   }
 };
-
-// Prints dice values and all possible combinations
-getScoringOptions(checkDice(rollDice()));
 
 /*
 values = [0,0,0,0,0,0];
