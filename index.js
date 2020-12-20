@@ -35,6 +35,10 @@ io.on("connection", (socket) => {
     console.log("Game created.");
   }
 
+  socket.on("diceChoices", (sentDice) => {
+    socket.broadcast.emit("diceChoices", sentDice);
+  });
+
   socket.on("rollDice", (selectedDice) => {
     io.emit("status", "Rolling dice.");
 

@@ -64,16 +64,25 @@
 
         $("input:checkbox").change(() => {
           let chosenDice = [];
+          let sentDice = [];
           for (let i = 0; i < 6; i++) {
             const checkBox = document.getElementById(`dice${i}`);
+            sentDice.push({ id: `dice${i}`, checked: checkBox.checked });
             if (checkBox.checked && !checkBox.disabled) {
               chosenDice.push({
                 value: document.getElementById(`label${i}`).innerHTML,
-                available: true,
               });
             }
           }
           socket.emit("getScoringOptions", chosenDice);
+          socket.emit("diceChoices", sentDice);
+        });
+
+        socket.on("diceChoices", (sentDice) => {
+          for (let i = 0; i < sentDice.length; i++) {
+            const checkBox = document.getElementById(sentDice[i].id);
+            checkBox.disabled = sentDice[i].checked;
+          }
         });
       });
     </script>
