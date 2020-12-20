@@ -81,7 +81,7 @@
         socket.on("diceChoices", (sentDice) => {
           for (let i = 0; i < sentDice.length; i++) {
             const checkBox = document.getElementById(sentDice[i].id);
-            checkBox.disabled = sentDice[i].checked;
+            checkBox.checked = sentDice[i].checked;
           }
         });
       });
