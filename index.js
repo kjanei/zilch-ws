@@ -1,8 +1,18 @@
 const { defaultMaxListeners } = require("stream");
 
+let express = require("express");
+let path = require("path");
 let app = require("express")();
 let http = require("http").createServer(app);
 let io = require("socket.io")(http);
+
+// https://stackoverflow.com/a/36041093
+// Express Middleware for serving static files
+app.use(express.static(path.join(__dirname, 'public')));
+
+app.get("/", (req, res) => {
+  res.sendFile(__dirname + "/public/index.html");
+});
 
 // To change number to words for scoring
 let numberToWords = require("number-to-words");
@@ -15,9 +25,7 @@ let turnScore = 0;
 // Cheat sheet for socket.io event emission:
 // https://socket.io/docs/v3/emit-cheatsheet/index.html
 
-app.get("/", (req, res) => {
-  res.sendFile(__dirname + "/public/index.html");
-});
+
 
 io.on("connection", (socket) => {
   connectedUsers++;
