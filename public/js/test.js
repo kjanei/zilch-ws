@@ -74,7 +74,7 @@ $(() => {
   socket.on("diceChoices", (sentDice) => {
     for (let i = 0; i < sentDice.length; i++) {
       const checkBox = document.getElementById(sentDice[i].id);
-      checkBox.checked = sentDice[i].checked;
+      checkBox.disabled = sentDice[i].checked;
     }
   });
 });
