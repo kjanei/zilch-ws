@@ -19,7 +19,7 @@ let numberToWords = require("number-to-words");
 
 let connectedUsers = 0;
 
-let game = null;
+let gameState = null;
 let turnScore = 0;
 
 // Cheat sheet for socket.io event emission:
@@ -37,9 +37,8 @@ io.on("connection", (socket) => {
   });
 
   if (connectedUsers === 2) {
-    game = createNewGame();
-    io.emit("status", "Second player found. New game!");
-    io.emit("newDice", game.dice);
+    gameState = createNewGame();
+    io.emit("gameStateUpdate", gameState);
     console.log("Game created.");
   }
 
@@ -53,15 +52,15 @@ io.on("connection", (socket) => {
     let unscoredDice = [];
 
     for (let i = 0; i < 6; i++) {
-      if (game.dice[i].available && selectedDice[i]) {
-        game.dice[i].available = false;
-        unscoredDice.push(game.dice[i].value);
+      if (gameState.dice[i].available && selectedDice[i]) {
+        gameState.dice[i].available = false;
+        unscoredDice.push(gameState.dice[i].value);
       }
     }
 
-    game.dice = rollDice(game.dice);
+    gameState.dice = rollDice(gameState.dice);
 
-    io.emit("newDice", game.dice);
+    io.emit("gameStateUpdate", gameState);
   });
 
   // const getScoringOptions = (availableDice) => {
@@ -151,7 +150,7 @@ io.on("connection", (socket) => {
       let unavailableDice = 0;
       for (let i = 0; i < 6; i++) {
         chosenDiceLength += availableDice[i];
-        if (!game.dice[i].available) {
+        if (!gameState.dice[i].available) {
           unavailableDice++;
         }
       }
