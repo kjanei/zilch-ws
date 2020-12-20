@@ -10,6 +10,7 @@ let numberToWords = require("number-to-words");
 let connectedUsers = 0;
 
 let game = null;
+let turnScore = 0;
 
 // Cheat sheet for socket.io event emission:
 // https://socket.io/docs/v3/emit-cheatsheet/index.html
@@ -52,7 +53,7 @@ io.on("connection", (socket) => {
   });
 
   // const getScoringOptions = (availableDice) => {
-  socket.on("scoreDice", (chosenDice) => {
+  socket.on("getScoringOptions", (chosenDice) => {
     const availableDice = checkDice(chosenDice);
     var scoringOptions = [];
     // Special rolls
@@ -82,61 +83,54 @@ io.on("connection", (socket) => {
     // Three of a kind or more
     for (i = 1; i < 6; i++) {
       // Starts at 2
-      if (availableDice[i] >= 3) {
-        // While the number of available dice is still above 3, add all valid combinations
-        for (h = availableDice[i]; h >= 3; h--) {
-          if (i != 5) {
-            scoringOptions.push({
-              roll: `${h} ${numberToWords.toWords(i + 1)}s`,
-              score: i * 100 * (h - 2),
-            });
-          } else {
-            // Sixes
-            scoringOptions.push({
-              roll: `${h} ${numberToWords.toWords(i + 1)}es`,
-              score: i * 100 * (h - 2),
-            });
-          }
+      let h = availableDice[i];
+      if (h >= 3) {
+        if (i != 5 || i != 4) {
+          scoringOptions.push({
+            roll: `${h} ${numberToWords.toWords(i + 1)}s`,
+            score: i * 100 * (h - 2),
+          });
+        } else if (i != 4) {
+          // Sixes
+          scoringOptions.push({
+            roll: `${h} ${numberToWords.toWords(i + 1)}es`,
+            score: i * 100 * (h - 2),
+          });
         }
       }
     }
     // Ones and Fives
-    switch (availableDice[0]) {
+    switch ((i = availableDice[0])) {
+      case 0:
+        break;
+      case 1:
+        scoringOptions.push({ roll: "Single one", score: 100 });
+        break;
+      case 2:
+        scoringOptions.push({ roll: `${i} ones`, score: 200 });
+        break;
       default:
-        // While the number of available dice is still above 0, add all valid combinations
-        for (i = availableDice[0]; i > 0; i--) {
-          if (i == 1) {
-            scoringOptions.push({ roll: "Single one", score: 100 });
-            continue;
-          }
-          if (i == 2) {
-            scoringOptions.push({ roll: `${i} ones`, score: 200 });
-            continue;
-          }
-          scoringOptions.push({
-            roll: `${i} ones`,
-            score: 1000 * (i - 2),
-          });
-        }
+        scoringOptions.push({
+          roll: `${i} ones`,
+          score: 1000 * (i - 2),
+        });
         break;
     }
-    switch (availableDice[4]) {
+
+    switch ((i = availableDice[4])) {
+      case 0:
+        break;
+      case 1:
+        scoringOptions.push({ roll: "Single five", score: 50 });
+        break;
+      case 2:
+        scoringOptions.push({ roll: `${i} fives`, score: 100 });
+        break;
       default:
-        // While the number of available dice is still above 0, add all valid combinations
-        for (i = availableDice[4]; i > 0; i--) {
-          if (i == 1) {
-            scoringOptions.push({ roll: "Single five", score: 50 });
-            continue;
-          }
-          if (i == 2) {
-            scoringOptions.push({ roll: `${i} fives`, score: 100 });
-            continue;
-          }
-          scoringOptions.push({
-            roll: `${i} fives`,
-            score: 500 * (i - 2),
-          });
-        }
+        scoringOptions.push({
+          roll: `${i} fives`,
+          score: 500 * (i - 2),
+        });
         break;
     }
     // Checks for empty array
@@ -159,11 +153,23 @@ io.on("connection", (socket) => {
       }
     }
 
+    let potentialRollScore = 0;
+    for (let i = 0; i < scoringOptions.length; i++) {
+      potentialRollScore += scoringOptions[i].score;
+    }
+    enableCashIn(turnScore, potentialRollScore);
+
     // Changes status to list of possible options
-    // send this to scoring options box***
     io.emit("scoringOptions", JSON.stringify(scoringOptions));
   });
 });
+
+const enableCashIn = (turnScore, potentialRollScore) => {
+  let totalPotentialScore = turnScore + potentialRollScore;
+  if (totalPotentialScore >= 300) {
+    io.emit("enableCashIn");
+  }
+};
 
 http.listen(3000, () => {
   console.log("Listening on port 3000");

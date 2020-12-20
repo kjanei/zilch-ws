@@ -37,6 +37,10 @@
           }
         });
 
+        socket.on("enableCashIn", () => {
+          document.getElementById("cashDice").disabled = false;
+        });
+
         $("#rollDice").click(() => {
           let dice = [];
           for (let i = 0; i < 6; i++) {
@@ -59,7 +63,6 @@
         });
 
         $("input:checkbox").change(() => {
-          console.log("change detected");
           let chosenDice = [];
           for (let i = 0; i < 6; i++) {
             const checkBox = document.getElementById(`dice${i}`);
@@ -70,8 +73,7 @@
               });
             }
           }
-          console.log(chosenDice);
-          socket.emit("scoreDice", chosenDice);
+          socket.emit("getScoringOptions", chosenDice);
         });
       });
     </script>
@@ -114,7 +116,7 @@
     <br />
     <button id="rollDice">Submit dice selection & roll dice</button>
     <br />
-    <button id="cashDice">Submit dice selection & cash in dice</button>
+    <button id="cashDice" disabled>Submit dice selection & cash in dice</button>
     <br />
     <br />
     <label for="currentScore">Current turn score: </label>
