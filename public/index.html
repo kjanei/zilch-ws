@@ -14,6 +14,10 @@
           $("#status").val(msg);
         });
 
+        socket.on("scoringOptions", (msg) => {
+          $("#scoringOptions").val(msg);
+        });
+
         // Listen to player number assignments
         socket.on("assignPlayerNumber", (number) => {
           if (playerNumber === null) {
@@ -53,13 +57,40 @@
           socket.emit("cashDice", dice);
           socket.emit("status", "Cashed in");
         });
+
+        $("input:checkbox").change(() => {
+          console.log("change detected");
+          let chosenDice = [];
+          for (let i = 0; i < 6; i++) {
+            const checkBox = document.getElementById(`dice${i}`);
+            if (checkBox.checked && !checkBox.disabled) {
+              chosenDice.push({
+                value: document.getElementById(`label${i}`).innerHTML,
+                available: true,
+              });
+            }
+          }
+          console.log(chosenDice);
+          socket.emit("scoreDice", chosenDice);
+        });
       });
     </script>
   </head>
   <body>
     Status:
     <br />
-    <textarea rows="10" disabled id="status" value="initial state"></textarea>
+    <textarea
+      rows="10"
+      cols="30"
+      disabled
+      id="status"
+      value="initial state"
+    ></textarea>
+    <br />
+    <br />
+    Scoring Options:
+    <br />
+    <textarea rows="10" cols="35" disabled id="scoringOptions"></textarea>
     <br />
     <br />
     <input type="checkbox" id="dice0" name="dice0" disabled />
