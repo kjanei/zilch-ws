@@ -1,6 +1,7 @@
 $(() => {
   let socket = io();
   let playerNumber = null;
+  let gameState = null;
 
   // Update status
   socket.on("status", (msg) => {
@@ -19,16 +20,21 @@ $(() => {
     }
   });
 
-  socket.on("newDice", (dice) => {
-    $("#status").val(`Status: \n${JSON.stringify(dice)}`);
+  socket.on("gameStateUpdate", (game) => {
+    $("#status").val(`Status: \n${JSON.stringify(game)}`);
+    gameState = game;
+    setDice(gameState.dice);
+  });
+
+  const setDice = (dice, disableAll) => {
     for (let i = 0; i < dice.length; i++) {
       let die = dice[i];
       const checkBox = document.getElementById(`dice${i}`);
       const label = document.getElementById(`label${i}`);
-      checkBox.disabled = !die.available;
+      checkBox.disabled = !die.available || playerNumber !== gameState.currentPlayer;
       label.innerHTML = die.value;
     }
-  });
+  }
 
   socket.on("enableCashIn", () => {
     document.getElementById("cashDice").disabled = false;
