@@ -31,10 +31,11 @@ $(() => {
       let die = dice[i];
       const checkBox = document.getElementById(`dice${i}`);
       const label = document.getElementById(`label${i}`);
-      checkBox.disabled = !die.available || playerNumber !== gameState.currentPlayer;
+      checkBox.disabled =
+        !die.available || playerNumber !== gameState.currentPlayer;
       label.innerHTML = die.value;
     }
-  }
+  };
 
   socket.on("enableCashIn", () => {
     document.getElementById("cashDice").disabled = false;
@@ -82,5 +83,11 @@ $(() => {
       const checkBox = document.getElementById(sentDice[i].id);
       checkBox.checked = sentDice[i].checked;
     }
+  });
+
+  socket.on("enableZilch", () => {
+    document.getElementById("zilch").style.display = "block";
+    document.getElementById("rollDice").disabled = true;
+    document.getElementById("cashDice").disabled = true;
   });
 });

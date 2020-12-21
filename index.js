@@ -8,7 +8,7 @@ let io = require("socket.io")(http);
 
 // https://stackoverflow.com/a/36041093
 // Express Middleware for serving static files
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/", (req, res) => {
   res.sendFile(__dirname + "/public/index.html");
@@ -24,8 +24,6 @@ let turnScore = 0;
 
 // Cheat sheet for socket.io event emission:
 // https://socket.io/docs/v3/emit-cheatsheet/index.html
-
-
 
 io.on("connection", (socket) => {
   connectedUsers++;
@@ -159,6 +157,9 @@ io.on("connection", (socket) => {
       } else if (chosenDiceLength + unavailableDice == 6) {
         // after three consecutive zilch counts, lose 500 points ***
         scoringOptions.push("Zilch!"); // Otherwise, zilch out
+        socket.emit("enableZilch");
+        gameState.consecutiveZilchCounter[gameState.currentPlayer - 1]++;
+        console.log(gameState.consecutiveZilchCounter);
       } else {
         scoringOptions.push("Choose some dice to see your options");
       }
@@ -189,7 +190,7 @@ http.listen(3000, () => {
 const createNewGame = (initialPlayer, scoreLimit = 10000) => {
   const currentPlayer = initialPlayer
     ? initialPlayer
-    : Math.floor(Math.random() + 1);
+    : Math.floor(Math.random() * 2) + 1;
 
   return {
     accumulatedPoints: 0, // The points accumulated, but not cashed in, on a specific turn.
