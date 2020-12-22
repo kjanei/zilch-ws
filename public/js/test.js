@@ -43,6 +43,10 @@ $(() => {
         !die.available || playerNumber !== gameState.currentPlayer;
       label.innerHTML = die.value;
     }
+    document.getElementById("rollDice").disabled =
+      playerNumber !== gameState.currentPlayer;
+    document.getElementById("cashDice").disabled =
+      playerNumber !== gameState.currentPlayer;
   };
 
   socket.on("enableCashIn", () => {
@@ -95,6 +99,8 @@ $(() => {
 
   socket.on("enableZilch", () => {
     document.getElementById("zilch").style.display = "block";
+    document.getElementById("zilch").disabled =
+      playerNumber !== gameState.currentPlayer;
     document.getElementById("rollDice").disabled = true;
     document.getElementById("cashDice").disabled = true;
   });

@@ -159,6 +159,7 @@ io.on("connection", (socket) => {
         // After three consecutive zilch counts, lose 500 points ***
         scoringOptions.push("Zilch!");
         socket.emit("enableZilch");
+        socket.broadcast.emit("enableZilch");
         gameState.consecutiveZilchCounter[gameState.currentPlayer - 1]++;
       } else {
         scoringOptions.push("Choose some dice to see your options");
