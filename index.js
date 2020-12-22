@@ -58,7 +58,6 @@ io.on("connection", (socket) => {
     gameState.potentialRollScore = 0;
 
     gameState.dice = rollDice(gameState.dice);
-    io.emit("currentScore", gameState.accumulatedPoints);
     io.emit("gameStateUpdate", gameState);
   });
 

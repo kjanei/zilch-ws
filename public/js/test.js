@@ -8,12 +8,8 @@ $(() => {
     $("#status").val(msg);
   });
 
-  socket.on("currentScore", (msg) => {
-    $("#currentScore").val(msg);
-  });
-
   socket.on("potentialScore", (msg) => {
-    $("#potentialScore").val(msg);
+    $("#potentialScore").text(msg);
   });
 
   socket.on("scoringOptions", (msg) => {
@@ -29,8 +25,10 @@ $(() => {
   });
 
   socket.on("gameStateUpdate", (game) => {
-    $("#status").val(`Status: \n${JSON.stringify(game)}`);
+    $("#status").val(`${JSON.stringify(game)}`);
     gameState = game;
+    $("#currentScore").text(game.accumulatedPoints);
+
     setDice(gameState.dice);
   });
 
