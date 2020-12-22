@@ -72,6 +72,7 @@ io.on("connection", (socket) => {
     const scoringOptions = getScoringOptions(chosenDice);
     enableCashIn(scoringOptions);
     enableRollDice();
+    enableFreeRoll(scoringOptions);
 
     io.emit("scoringOptions", JSON.stringify(scoringOptions));
   });
@@ -86,9 +87,9 @@ io.on("connection", (socket) => {
 
     if (gameState.score[gameState.currentPlayer - 1] >= gameState.scoreLimit) {
       io.emit("status", "Player " + gameState.currentPlayer + " wins!");
-      nextPlayerTurn(true);
+      nextPlayerTurn((gameOver = true));
     } else {
-      nextPlayerTurn(false);
+      nextPlayerTurn();
     }
   });
 
@@ -101,11 +102,19 @@ io.on("connection", (socket) => {
         ? io.emit("p1Score", gameState.score[gameState.currentPlayer - 1])
         : io.emit("p2Score", gameState.score[gameState.currentPlayer - 1]);
     }
-    nextPlayerTurn(false);
+    nextPlayerTurn();
+  });
+
+  socket.on("freeRoll", () => {
+    gameState.accumulatedPoints += gameState.potentialRollScore;
+    io.emit("resetCheckboxes");
+    io.emit("scoringOptions", "");
+    gameState.dice = rollDice();
+    io.emit("gameStateUpdate", gameState);
   });
 });
 
-const nextPlayerTurn = (gameOver) => {
+const nextPlayerTurn = (gameOver = false) => {
   gameState.accumulatedPoints = 0;
   gameState.potentialRollScore = 0;
   io.emit("potentialScore", gameState.potentialRollScore);
@@ -169,6 +178,20 @@ const enableRollDice = () => {
   }
 };
 
+const enableFreeRoll = (scoringOptions) => {
+  let scoredDiceCounter = 0;
+  for (let i = 0; i < NUMBER_OF_DICE; i++) {
+    if (gameState.dice[i].scored || !gameState.dice[i].available) {
+      scoredDiceCounter++;
+    } else {
+      continue;
+    }
+    if (scoredDiceCounter == 6) {
+      io.emit("enableFreeRoll");
+    }
+  }
+};
+
 const selectDice = (selection, previousDice) => {
   const processedDice = [];
 
@@ -214,7 +237,7 @@ const rollDice = (previousDice) => {
 const countDice = (dice) => {
   let scoringDiceArray = [0, 0, 0, 0, 0, 0];
   for (i = 0; i < dice.length; i++) {
-    if (dice[i]) {
+    if (dice[i] && gameState.dice[i].available) {
       scoringDiceArray[gameState.dice[i].value - 1]++;
     }
     // scoringDiceArray[dice[i].value - 1]++;
@@ -326,9 +349,9 @@ const getScoringOptions = (chosenDice) => {
       scoringOptions.push({ roll: "No scoring dice", score: 500 });
       removeAllDice();
     } else if (chosenDiceLength + unavailableDice === 6) {
-      scoringOptions.push("Zilch!");
+      scoringOptions.push({ roll: "Zilch!", score: 0 });
       io.emit("enableZilch");
-      removeAllDice();
+      // removeAllDice();
     } else {
       scoringOptions.push("Choose some dice to see your options");
     }

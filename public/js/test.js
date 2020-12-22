@@ -45,7 +45,17 @@ $(() => {
     for (let i = 0; i < NUMBER_OF_DICE; i++) {
       document.getElementById(`dice${i}`).checked = false;
     }
+    document.getElementById("rollDice").disabled = true;
     document.getElementById("zilch").style.display = "none";
+    document.getElementById("freeRoll").style.display = "none";
+  });
+
+  socket.on("enableFreeRoll", () => {
+    document.getElementById("freeRoll").style.display = "block";
+    document.getElementById("freeRoll").disabled =
+      playerNumber !== gameState.currentPlayer;
+    document.getElementById("rollDice").disabled = true;
+    document.getElementById("cashDice").disabled = true;
   });
 
   const setDice = (dice) => {
@@ -96,6 +106,10 @@ $(() => {
 
   $("#zilch").click(() => {
     socket.emit("zilch");
+  });
+
+  $("#freeRoll").click(() => {
+    socket.emit("freeRoll");
   });
 
   $("input:checkbox").change(() => {
