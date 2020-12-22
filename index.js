@@ -18,7 +18,6 @@ app.get("/", (req, res) => {
 let connectedUsers = 0;
 
 let gameState = null;
-let turnScore = 0;
 const NUMBER_OF_DICE = 6;
 
 // Cheat sheet for socket.io event emission:
@@ -55,8 +54,11 @@ io.on("connection", (socket) => {
       }
     }
 
-    gameState.dice = rollDice(gameState.dice);
+    gameState.accumulatedPoints += gameState.potentialRollScore;
+    gameState.potentialRollScore = 0;
 
+    gameState.dice = rollDice(gameState.dice);
+    io.emit("currentScore", gameState.accumulatedPoints);
     io.emit("gameStateUpdate", gameState);
   });
 
@@ -91,13 +93,13 @@ io.on("connection", (socket) => {
     for (i = 1; i < NUMBER_OF_DICE; i++) {
       const h = scoringDiceArray[i];
       if (h >= 3) {
-        if (i != 5 || i != 4) {
+        if (i < 4) {
           // Twos, threes, fours
           scoringOptions.push({
             roll: `${h} ${numberToWords.toWords(i + 1)}s`,
             score: i * 100 * (h - 2),
           });
-        } else if (i != 4) {
+        } else if (i === 5) {
           // Sixes
           scoringOptions.push({
             roll: `${h} ${numberToWords.toWords(i + 1)}es`,
@@ -155,7 +157,7 @@ io.on("connection", (socket) => {
         scoringOptions.push({ roll: "No scoring dice", score: 500 });
       } else if (chosenDiceLength + unavailableDice === 6) {
         // After three consecutive zilch counts, lose 500 points ***
-        scoringOptions.push("Zilch!"); // Otherwise, zilch out
+        scoringOptions.push("Zilch!");
         socket.emit("enableZilch");
         gameState.consecutiveZilchCounter[gameState.currentPlayer - 1]++;
       } else {
@@ -163,11 +165,11 @@ io.on("connection", (socket) => {
       }
     }
 
-    let potentialRollScore = 0;
+    gameState.potentialRollScore = 0;
     for (let i = 0; i < scoringOptions.length; i++) {
-      potentialRollScore += scoringOptions[i].score;
+      gameState.potentialRollScore += scoringOptions[i].score;
     }
-    enableCashIn(turnScore, potentialRollScore);
+    enableCashIn();
 
     io.emit("scoringOptions", JSON.stringify(scoringOptions));
   });
@@ -184,18 +186,20 @@ const createNewGame = (
 
   return {
     accumulatedPoints: 0, // The points accumulated, but not cashed in, on a specific turn.
+    potentialRollScore: 0,
     currentPlayer,
     dice: rollDice(),
     history: [], // The history of moves played so far in the game
     score: [0, 0], // Current (banked) score of both players
     consecutiveZilchCounter: [0, 0],
     scoreLimit, // The score limit for this game.
-    numberOfPlayers,
   };
 };
 
-const enableCashIn = (turnScore, potentialRollScore) => {
-  const totalPotentialScore = turnScore + potentialRollScore;
+const enableCashIn = () => {
+  const totalPotentialScore =
+    gameState.accumulatedPoints + gameState.potentialRollScore;
+  io.emit("potentialScore", totalPotentialScore);
   if (totalPotentialScore >= 300) {
     io.emit("enableCashIn");
   }

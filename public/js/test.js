@@ -8,6 +8,14 @@ $(() => {
     $("#status").val(msg);
   });
 
+  socket.on("currentScore", (msg) => {
+    $("#currentScore").val(msg);
+  });
+
+  socket.on("potentialScore", (msg) => {
+    $("#potentialScore").val(msg);
+  });
+
   socket.on("scoringOptions", (msg) => {
     $("#scoringOptions").val(msg);
   });
