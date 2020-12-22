@@ -45,7 +45,7 @@ io.on("connection", (socket) => {
   socket.on("rollDice", (selectedDice) => {
     io.emit("status", "Rolling dice.");
 
-    let unscoredDice = [];
+    const unscoredDice = [];
 
     for (let i = 0; i < NUMBER_OF_DICE; i++) {
       if (gameState.dice[i].available && selectedDice[i]) {
@@ -62,83 +62,81 @@ io.on("connection", (socket) => {
   });
 
   socket.on("getScoringOptions", (chosenDice) => {
-    const scoringDiceArray = checkDice(chosenDice);
+    const diceCounts = countDice(chosenDice);
     let scoringOptions = [];
 
-    if (scoringDiceArray.length === NUMBER_OF_DICE) {
-      // One to six (req 6 dice)
-      for (i = 0; i < NUMBER_OF_DICE; i++) {
-        if (scoringDiceArray[i] != 1) {
-          break;
-        }
-        if (i === 5 && scoringDiceArray[i] === 1) {
-          scoringOptions.push({ roll: "One to six*", score: 1500 });
-        }
+    // One to six (req 6 dice)
+    for (i = 0; i < NUMBER_OF_DICE; i++) {
+      if (diceCounts[i] != 1) {
+        break;
       }
-
-      // Any three pairs (req 6 dice)
-      let pairCount = 0;
-      for (i = 0; i < NUMBER_OF_DICE; i++) {
-        if (scoringDiceArray[i] === 2) {
-          pairCount++;
-        }
-      }
-      if (pairCount === 3) {
-        scoringOptions.push({ roll: "Any three pairs*", score: 1500 });
+      if (i === 5 && diceCounts[i] === 1) {
+        scoringOptions.push({ roll: "One to Six", score: 1500 });
       }
     }
 
+    // Any three pairs (req 6 dice)
+    let pairCount = 0;
+    for (i = 0; i < NUMBER_OF_DICE; i++) {
+      if (diceCounts[i] === 2) {
+        pairCount++;
+      }
+    }
+    if (pairCount === 3) {
+      scoringOptions.push({ roll: "Three Pairs", score: 1500 });
+    }
+
     // Three of a kind or more
-    for (i = 1; i < NUMBER_OF_DICE; i++) {
-      const h = scoringDiceArray[i];
-      if (h >= 3) {
+    for (i = 0; i < NUMBER_OF_DICE; i++) {
+      const dieCount = diceCounts[i];
+      if (dieCount >= 3) {
         if (i < 4) {
           // Twos, threes, fours
           scoringOptions.push({
-            roll: `${h} ${numberToWords.toWords(i + 1)}s`,
-            score: i * 100 * (h - 2),
+            roll: `${dieCount} ${numberToWords.toWords(i + 1)}s`,
+            score: i * 100 * (dieCount - 2),
           });
         } else if (i === 5) {
           // Sixes
           scoringOptions.push({
-            roll: `${h} ${numberToWords.toWords(i + 1)}es`,
-            score: i * 100 * (h - 2),
+            roll: `${dieCount} ${numberToWords.toWords(i + 1)}es`,
+            score: i * 100 * (dieCount - 2),
           });
         }
       }
     }
 
     // Ones and Fives
-    switch ((i = scoringDiceArray[0])) {
+    switch (diceCounts[0]) {
       case 0:
         break;
       case 1:
         scoringOptions.push({ roll: "Single one", score: 100 });
         break;
       case 2:
-        scoringOptions.push({ roll: `${i} ones`, score: 200 });
+        scoringOptions.push({ roll: `${diceCounts[0]} ones`, score: 200 });
         break;
       default:
         scoringOptions.push({
-          roll: `${i} ones`,
-          score: 1000 * (i - 2),
+          roll: `${diceCounts[0]} ones`,
+          score: 1000 * (diceCounts[0] - 2),
         });
         break;
     }
 
-    switch ((i = scoringDiceArray[4])) {
+    switch (diceCounts[4]) {
       case 0:
         break;
       case 1:
         scoringOptions.push({ roll: "Single five", score: 50 });
         break;
       case 2:
-        scoringOptions.push({ roll: `${i} fives`, score: 100 });
+        scoringOptions.push({ roll: `${diceCounts[4]} fives`, score: 100 });
         break;
       default:
         scoringOptions.push({
-          roll: `${i} fives`,
-          score: 500 * (i - 2),
+          roll: `${diceCounts[4]} fives`,
+          score: 500 * (diceCounts[4] - 2),
         });
         break;
     }
@@ -147,7 +145,7 @@ io.on("connection", (socket) => {
       let chosenDiceLength = 0;
       let unavailableDice = 0;
       for (let i = 0; i < NUMBER_OF_DICE; i++) {
-        chosenDiceLength += scoringDiceArray[i];
+        chosenDiceLength += diceCounts[i];
         if (!gameState.dice[i].available) {
           unavailableDice++;
         }
@@ -245,7 +243,7 @@ const rollDice = (previousDice) => {
 };
 
 // Returns an array of ordered dice values for scoring
-const checkDice = (dice) => {
+const countDice = (dice) => {
   let scoringDiceArray = [0, 0, 0, 0, 0, 0];
   for (i = 0; i < dice.length; i++) {
     scoringDiceArray[dice[i].value - 1]++;

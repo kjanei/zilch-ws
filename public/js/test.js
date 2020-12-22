@@ -32,7 +32,7 @@ $(() => {
     setDice(gameState.dice);
   });
 
-  const setDice = (dice, disableAll) => {
+  const setDice = (dice) => {
     for (let i = 0; i < dice.length; i++) {
       let die = dice[i];
       const checkBox = document.getElementById(`dice${i}`);
