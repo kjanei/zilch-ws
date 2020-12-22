@@ -263,18 +263,11 @@ const getScoringOptions = (chosenDice) => {
   for (i = 1; i < NUMBER_OF_DICE; i++) {
     const dieCount = diceCounts[i];
     if (dieCount >= 3) {
-      if (i < 4) {
+      if (i < 4 || i === 5) {
         // Twos, threes, fours
         scoringOptions.push({
           roll: `${dieCount} ${numberToWords.toWords(i + 1)}s`,
-          score: i * 100 * (dieCount - 2),
-        });
-        removeUsedDice(i + 1, dieCount, chosenDice);
-      } else if (i === 5) {
-        // Sixes
-        scoringOptions.push({
-          roll: `${dieCount} ${numberToWords.toWords(i + 1)}es`,
-          score: i * 100 * (dieCount - 2),
+          score: (i + 1) * 100 * (dieCount - 2),
         });
         removeUsedDice(i + 1, dieCount, chosenDice);
       }
