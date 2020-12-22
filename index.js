@@ -87,7 +87,7 @@ io.on("connection", (socket) => {
     }
 
     // Three of a kind or more
-    for (i = 0; i < NUMBER_OF_DICE; i++) {
+    for (i = 1; i < NUMBER_OF_DICE; i++) {
       const dieCount = diceCounts[i];
       if (dieCount >= 3) {
         if (i < 4) {
