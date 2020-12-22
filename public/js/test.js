@@ -57,12 +57,17 @@ $(() => {
         !die.available || playerNumber !== gameState.currentPlayer;
       label.innerHTML = die.value;
     }
-    document.getElementById("rollDice").disabled =
-      playerNumber !== gameState.currentPlayer;
+    // document.getElementById("rollDice").disabled =
+    //   playerNumber !== gameState.currentPlayer;
   };
 
   socket.on("enableCashIn", () => {
     document.getElementById("cashDice").disabled =
+      playerNumber !== gameState.currentPlayer;
+  });
+
+  socket.on("enableRollDice", () => {
+    document.getElementById("rollDice").disabled =
       playerNumber !== gameState.currentPlayer;
   });
 
@@ -72,6 +77,7 @@ $(() => {
       const checkBox = document.getElementById(`dice${i}`);
       dice[i] = checkBox.checked;
     }
+    console.log(dice);
     socket.emit("rollDice", dice);
     socket.emit("scoreDice", dice);
     socket.emit("status", "Submitted roll");
@@ -93,17 +99,16 @@ $(() => {
   });
 
   $("input:checkbox").change(() => {
+    document.getElementById("rollDice").disabled = true;
+    document.getElementById("cashDice").disabled = true;
     let chosenDice = [];
     let sentDice = [];
     for (let i = 0; i < NUMBER_OF_DICE; i++) {
       const checkBox = document.getElementById(`dice${i}`);
       sentDice.push({ id: `dice${i}`, checked: checkBox.checked });
-      if (checkBox.checked && !checkBox.disabled) {
-        chosenDice.push({
-          value: document.getElementById(`label${i}`).innerHTML,
-        });
-      }
+      chosenDice[i] = checkBox.checked && gameState.dice[i].available;
     }
+    // console.log(chosenDice);
     socket.emit("scoreDice", chosenDice);
     socket.emit("diceChoices", sentDice);
   });

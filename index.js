@@ -45,14 +45,21 @@ io.on("connection", (socket) => {
   socket.on("rollDice", (selectedDice) => {
     io.emit("status", "Rolling dice.");
 
-    const unscoredDice = [];
-
+    // const unscoredDice = [];
     for (let i = 0; i < NUMBER_OF_DICE; i++) {
-      if (gameState.dice[i].available && selectedDice[i]) {
+      if (
+        gameState.dice[i].available &&
+        selectedDice[i] &&
+        gameState.dice[i].scored
+      ) {
         gameState.dice[i].available = false;
-        unscoredDice.push(gameState.dice[i].value);
+        // unscoredDice.push(false);
       }
+      // else {
+      //   unscoredDice.push(true);
+      // }
     }
+    io.emit("resetCheckboxes");
 
     gameState.accumulatedPoints += gameState.potentialRollScore;
     gameState.potentialRollScore = 0;
@@ -62,9 +69,9 @@ io.on("connection", (socket) => {
   });
 
   socket.on("scoreDice", (chosenDice) => {
-    const diceCounts = countDice(chosenDice);
-    const scoringOptions = getScoringOptions(diceCounts);
+    const scoringOptions = getScoringOptions(chosenDice);
     enableCashIn(scoringOptions);
+    enableRollDice();
 
     io.emit("scoringOptions", JSON.stringify(scoringOptions));
   });
@@ -116,7 +123,7 @@ const nextPlayerTurn = (gameOver) => {
 
 const createNewGame = (
   initialPlayer,
-  scoreLimit = 1000,
+  scoreLimit = 10000,
   numberOfPlayers = 2
 ) => {
   const currentPlayer = initialPlayer
@@ -153,6 +160,15 @@ const enableCashIn = (scoringOptions) => {
   }
 };
 
+const enableRollDice = () => {
+  for (let i = 0; i < NUMBER_OF_DICE; i++) {
+    if (gameState.dice[i].scored) {
+      io.emit("enableRollDice");
+      break;
+    }
+  }
+};
+
 const selectDice = (selection, previousDice) => {
   const processedDice = [];
 
@@ -175,6 +191,7 @@ const rollDice = (previousDice) => {
         return {
           value: Math.floor(Math.random() * NUMBER_OF_DICE) + 1,
           available: true,
+          scored: false,
         };
       }
       return die; // Otherwise, return the used die without changing its value.
@@ -187,6 +204,7 @@ const rollDice = (previousDice) => {
     dice.push({
       value: Math.floor(Math.random() * NUMBER_OF_DICE) + 1,
       available: true,
+      scored: false,
     });
   }
   return dice;
@@ -196,13 +214,18 @@ const rollDice = (previousDice) => {
 const countDice = (dice) => {
   let scoringDiceArray = [0, 0, 0, 0, 0, 0];
   for (i = 0; i < dice.length; i++) {
-    scoringDiceArray[dice[i].value - 1]++;
+    if (dice[i]) {
+      scoringDiceArray[gameState.dice[i].value - 1]++;
+    }
+    // scoringDiceArray[dice[i].value - 1]++;
   }
   return scoringDiceArray;
 };
 
-const getScoringOptions = (diceCounts) => {
+const getScoringOptions = (chosenDice) => {
   let scoringOptions = [];
+  const diceCounts = countDice(chosenDice);
+  addAllDice();
 
   // One to six (req 6 dice)
   for (i = 0; i < NUMBER_OF_DICE; i++) {
@@ -211,6 +234,7 @@ const getScoringOptions = (diceCounts) => {
     }
     if (i === 5 && diceCounts[i] === 1) {
       scoringOptions.push({ roll: "One to Six", score: 1500 });
+      removeAllDice();
     }
   }
 
@@ -223,6 +247,7 @@ const getScoringOptions = (diceCounts) => {
   }
   if (pairCount === 3) {
     scoringOptions.push({ roll: "Three Pairs", score: 1500 });
+    removeAllDice();
   }
 
   // Three of a kind or more
@@ -235,12 +260,14 @@ const getScoringOptions = (diceCounts) => {
           roll: `${dieCount} ${numberToWords.toWords(i + 1)}s`,
           score: i * 100 * (dieCount - 2),
         });
+        removeUsedDice(i + 1, dieCount, chosenDice);
       } else if (i === 5) {
         // Sixes
         scoringOptions.push({
           roll: `${dieCount} ${numberToWords.toWords(i + 1)}es`,
           score: i * 100 * (dieCount - 2),
         });
+        removeUsedDice(i + 1, dieCount, chosenDice);
       }
     }
   }
@@ -251,15 +278,18 @@ const getScoringOptions = (diceCounts) => {
       break;
     case 1:
       scoringOptions.push({ roll: "Single one", score: 100 });
+      removeUsedDice(1, diceCounts[0], chosenDice);
       break;
     case 2:
       scoringOptions.push({ roll: `${diceCounts[0]} ones`, score: 200 });
+      removeUsedDice(1, diceCounts[0], chosenDice);
       break;
     default:
       scoringOptions.push({
         roll: `${diceCounts[0]} ones`,
         score: 1000 * (diceCounts[0] - 2),
       });
+      removeUsedDice(1, diceCounts[0], chosenDice);
       break;
   }
 
@@ -268,15 +298,18 @@ const getScoringOptions = (diceCounts) => {
       break;
     case 1:
       scoringOptions.push({ roll: "Single five", score: 50 });
+      removeUsedDice(5, diceCounts[4], chosenDice);
       break;
     case 2:
       scoringOptions.push({ roll: `${diceCounts[4]} fives`, score: 100 });
+      removeUsedDice(5, diceCounts[4], chosenDice);
       break;
     default:
       scoringOptions.push({
         roll: `${diceCounts[4]} fives`,
         score: 500 * (diceCounts[4] - 2),
       });
+      removeUsedDice(5, diceCounts[4], chosenDice);
       break;
   }
 
@@ -291,15 +324,46 @@ const getScoringOptions = (diceCounts) => {
     }
     if (chosenDiceLength === NUMBER_OF_DICE) {
       scoringOptions.push({ roll: "No scoring dice", score: 500 });
+      removeAllDice();
     } else if (chosenDiceLength + unavailableDice === 6) {
       scoringOptions.push("Zilch!");
       io.emit("enableZilch");
+      removeAllDice();
     } else {
       scoringOptions.push("Choose some dice to see your options");
     }
   }
 
   return scoringOptions;
+};
+
+const removeUsedDice = (diceValue, iterations, chosenDice) => {
+  let currentIterations = 0;
+  for (let i = 0; i < NUMBER_OF_DICE; i++) {
+    if (
+      gameState.dice[i].value === diceValue &&
+      gameState.dice[i].available &&
+      chosenDice[i]
+    ) {
+      gameState.dice[i].scored = true;
+      currentIterations++;
+    }
+    if (currentIterations === iterations) {
+      break;
+    }
+  }
+};
+
+const removeAllDice = () => {
+  for (i = 0; i < NUMBER_OF_DICE; i++) {
+    gameState.dice[i].scored = true;
+  }
+};
+
+const addAllDice = () => {
+  for (i = 0; i < NUMBER_OF_DICE; i++) {
+    gameState.dice[i].scored = false;
+  }
 };
 
 http.listen(3000, () => {
