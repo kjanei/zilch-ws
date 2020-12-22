@@ -1,11 +1,9 @@
-const { defaultMaxListeners } = require("stream");
-
-let express = require("express");
-let path = require("path");
-let app = require("express")();
-let http = require("http").createServer(app);
-let io = require("socket.io")(http);
-let numberToWords = require("number-to-words");
+const express = require("express");
+const path = require("path");
+const app = require("express")();
+const http = require("http").createServer(app);
+const io = require("socket.io")(http);
+const numberToWords = require("number-to-words");
 
 // https://stackoverflow.com/a/36041093
 // Express Middleware for serving static files
@@ -15,18 +13,22 @@ app.get("/", (req, res) => {
   res.sendFile(__dirname + "/public/index.html");
 });
 
-let connectedUsers = 0;
-
-let gameState = null;
+// Constants
 const NUMBER_OF_DICE = 6;
+
+// Global state - should eventually be moved into "rooms"
+let gameState = null;
+let connectedUsers = 0;
 
 // Cheat sheet for socket.io event emission:
 // https://socket.io/docs/v3/emit-cheatsheet/index.html
-
 io.on("connection", (socket) => {
   connectedUsers++;
   console.log("User connected at", new Date().toString());
+
+  // Send the connecting user a player number
   io.emit("assignPlayerNumber", connectedUsers);
+
   socket.on("disconnect", () => {
     connectedUsers--;
     console.log("User disconnected at", new Date().toString());
@@ -38,14 +40,15 @@ io.on("connection", (socket) => {
     console.log("Game created.");
   }
 
+  // Re-emit the selections made by the currently active player to other players
   socket.on("diceChoices", (sentDice) => {
     socket.broadcast.emit("diceChoices", sentDice);
   });
 
+  // Submit some dice and roll the rest
   socket.on("rollDice", (selectedDice) => {
     io.emit("status", "Rolling dice.");
 
-    // const unscoredDice = [];
     for (let i = 0; i < NUMBER_OF_DICE; i++) {
       if (
         gameState.dice[i].available &&
@@ -53,11 +56,7 @@ io.on("connection", (socket) => {
         gameState.dice[i].scored
       ) {
         gameState.dice[i].available = false;
-        // unscoredDice.push(false);
       }
-      // else {
-      //   unscoredDice.push(true);
-      // }
     }
     io.emit("resetCheckboxes");
 
@@ -190,19 +189,6 @@ const enableFreeRoll = (scoringOptions) => {
       io.emit("enableFreeRoll");
     }
   }
-};
-
-const selectDice = (selection, previousDice) => {
-  const processedDice = [];
-
-  for (let i = 0; i < previousDice.length; i++) {
-    processedDice[i] = previousDice[i];
-    if (previousDice[i].available && selection[i]) {
-      processedDice[i].available = false;
-    }
-  }
-
-  return processedDice;
 };
 
 const rollDice = (previousDice) => {
