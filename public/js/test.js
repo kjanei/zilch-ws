@@ -17,12 +17,12 @@ $(() => {
     $("#scoringOptions").val(msg);
   });
 
-  socket.on("p1Score", (msg) => {
-    $("#p1Score").val(msg);
+  socket.on("p1Score", (score) => {
+    $("#p1Score").val(score);
   });
 
-  socket.on("p2Score", (msg) => {
-    $("#p2Score").val(msg);
+  socket.on("p2Score", (score) => {
+    $("#p2Score").val(score);
   });
 
   // Listen to player number assignments
@@ -45,6 +45,7 @@ $(() => {
     for (let i = 0; i < NUMBER_OF_DICE; i++) {
       document.getElementById(`dice${i}`).checked = false;
     }
+    document.getElementById("zilch").style.display = "none";
   });
 
   const setDice = (dice) => {
@@ -87,6 +88,10 @@ $(() => {
     socket.emit("status", "Cashed in");
   });
 
+  $("#zilch").click(() => {
+    socket.emit("zilch");
+  });
+
   $("input:checkbox").change(() => {
     let chosenDice = [];
     let sentDice = [];
@@ -99,7 +104,7 @@ $(() => {
         });
       }
     }
-    socket.emit("getScoringOptions", chosenDice);
+    socket.emit("scoreDice", chosenDice);
     socket.emit("diceChoices", sentDice);
   });
 

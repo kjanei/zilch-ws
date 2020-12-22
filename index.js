@@ -61,137 +61,62 @@ io.on("connection", (socket) => {
     io.emit("gameStateUpdate", gameState);
   });
 
-  socket.on("getScoringOptions", (chosenDice) => {
+  socket.on("scoreDice", (chosenDice) => {
     const diceCounts = countDice(chosenDice);
-    let scoringOptions = [];
-
-    // One to six (req 6 dice)
-    for (i = 0; i < NUMBER_OF_DICE; i++) {
-      if (diceCounts[i] != 1) {
-        break;
-      }
-      if (i === 5 && diceCounts[i] === 1) {
-        scoringOptions.push({ roll: "One to Six", score: 1500 });
-      }
-    }
-
-    // Any three pairs (req 6 dice)
-    let pairCount = 0;
-    for (i = 0; i < NUMBER_OF_DICE; i++) {
-      if (diceCounts[i] === 2) {
-        pairCount++;
-      }
-    }
-    if (pairCount === 3) {
-      scoringOptions.push({ roll: "Three Pairs", score: 1500 });
-    }
-
-    // Three of a kind or more
-    for (i = 1; i < NUMBER_OF_DICE; i++) {
-      const dieCount = diceCounts[i];
-      if (dieCount >= 3) {
-        if (i < 4) {
-          // Twos, threes, fours
-          scoringOptions.push({
-            roll: `${dieCount} ${numberToWords.toWords(i + 1)}s`,
-            score: i * 100 * (dieCount - 2),
-          });
-        } else if (i === 5) {
-          // Sixes
-          scoringOptions.push({
-            roll: `${dieCount} ${numberToWords.toWords(i + 1)}es`,
-            score: i * 100 * (dieCount - 2),
-          });
-        }
-      }
-    }
-
-    // Ones and Fives
-    switch (diceCounts[0]) {
-      case 0:
-        break;
-      case 1:
-        scoringOptions.push({ roll: "Single one", score: 100 });
-        break;
-      case 2:
-        scoringOptions.push({ roll: `${diceCounts[0]} ones`, score: 200 });
-        break;
-      default:
-        scoringOptions.push({
-          roll: `${diceCounts[0]} ones`,
-          score: 1000 * (diceCounts[0] - 2),
-        });
-        break;
-    }
-
-    switch (diceCounts[4]) {
-      case 0:
-        break;
-      case 1:
-        scoringOptions.push({ roll: "Single five", score: 50 });
-        break;
-      case 2:
-        scoringOptions.push({ roll: `${diceCounts[4]} fives`, score: 100 });
-        break;
-      default:
-        scoringOptions.push({
-          roll: `${diceCounts[4]} fives`,
-          score: 500 * (diceCounts[4] - 2),
-        });
-        break;
-    }
-
-    if (scoringOptions.length === 0) {
-      let chosenDiceLength = 0;
-      let unavailableDice = 0;
-      for (let i = 0; i < NUMBER_OF_DICE; i++) {
-        chosenDiceLength += diceCounts[i];
-        if (!gameState.dice[i].available) {
-          unavailableDice++;
-        }
-      }
-      if (chosenDiceLength === NUMBER_OF_DICE) {
-        scoringOptions.push({ roll: "No scoring dice", score: 500 });
-      } else if (chosenDiceLength + unavailableDice === 6) {
-        // After three consecutive zilch counts, lose 500 points ***
-        scoringOptions.push("Zilch!");
-        io.emit("enableZilch");
-        gameState.consecutiveZilchCounter[gameState.currentPlayer - 1]++;
-      } else {
-        scoringOptions.push("Choose some dice to see your options");
-      }
-    }
-
-    gameState.potentialRollScore = 0;
-    for (let i = 0; i < scoringOptions.length; i++) {
-      gameState.potentialRollScore += scoringOptions[i].score;
-    }
-    enableCashIn();
+    const scoringOptions = getScoringOptions(diceCounts);
+    enableCashIn(scoringOptions);
 
     io.emit("scoringOptions", JSON.stringify(scoringOptions));
   });
 
   socket.on("cashDice", () => {
+    gameState.consecutiveZilchCounter[gameState.currentPlayer - 1] = 0;
     gameState.score[gameState.currentPlayer - 1] +=
       gameState.potentialRollScore + gameState.accumulatedPoints;
     gameState.currentPlayer == 1
       ? io.emit("p1Score", gameState.score[gameState.currentPlayer - 1])
       : io.emit("p2Score", gameState.score[gameState.currentPlayer - 1]);
+
+    if (gameState.score[gameState.currentPlayer - 1] >= gameState.scoreLimit) {
+      io.emit("status", "Player " + gameState.currentPlayer + " wins!");
+      nextPlayerTurn(true);
+    } else {
+      nextPlayerTurn(false);
+    }
+  });
+
+  socket.on("zilch", () => {
+    gameState.consecutiveZilchCounter[gameState.currentPlayer - 1]++;
+    if (gameState.consecutiveZilchCounter[gameState.currentPlayer - 1] == 3) {
+      gameState.score[gameState.currentPlayer - 1] -= 500;
+      gameState.consecutiveZilchCounter[gameState.currentPlayer - 1] = 0;
+      gameState.currentPlayer == 1
+        ? io.emit("p1Score", gameState.score[gameState.currentPlayer - 1])
+        : io.emit("p2Score", gameState.score[gameState.currentPlayer - 1]);
+    }
+    nextPlayerTurn(false);
+  });
+});
+
+const nextPlayerTurn = (gameOver) => {
+  gameState.accumulatedPoints = 0;
+  gameState.potentialRollScore = 0;
+  io.emit("potentialScore", gameState.potentialRollScore);
+  io.emit("resetCheckboxes");
+  io.emit("scoringOptions", "");
+  if (!gameOver) {
     gameState.currentPlayer =
       gameState.currentPlayer < gameState.numberOfPlayers
         ? gameState.currentPlayer + 1
         : 1;
-    gameState.accumulatedPoints = 0;
-    gameState.potentialRollScore = 0;
     gameState.dice = rollDice();
-    io.emit("resetCheckboxes");
     io.emit("gameStateUpdate", gameState);
-  });
-});
+  }
+};
 
 const createNewGame = (
   initialPlayer,
-  scoreLimit = 10000,
+  scoreLimit = 1000,
   numberOfPlayers = 2
 ) => {
   const currentPlayer = initialPlayer
@@ -211,10 +136,18 @@ const createNewGame = (
   };
 };
 
-const enableCashIn = () => {
+const enableCashIn = (scoringOptions) => {
+  gameState.potentialRollScore = 0;
+  if (scoringOptions[0].score !== undefined) {
+    for (let i = 0; i < scoringOptions.length; i++) {
+      gameState.potentialRollScore += scoringOptions[i].score;
+    }
+  }
+
   const totalPotentialScore =
     gameState.accumulatedPoints + gameState.potentialRollScore;
   io.emit("potentialScore", totalPotentialScore);
+
   if (totalPotentialScore >= 300) {
     io.emit("enableCashIn");
   }
@@ -266,6 +199,107 @@ const countDice = (dice) => {
     scoringDiceArray[dice[i].value - 1]++;
   }
   return scoringDiceArray;
+};
+
+const getScoringOptions = (diceCounts) => {
+  let scoringOptions = [];
+
+  // One to six (req 6 dice)
+  for (i = 0; i < NUMBER_OF_DICE; i++) {
+    if (diceCounts[i] != 1) {
+      break;
+    }
+    if (i === 5 && diceCounts[i] === 1) {
+      scoringOptions.push({ roll: "One to Six", score: 1500 });
+    }
+  }
+
+  // Any three pairs (req 6 dice)
+  let pairCount = 0;
+  for (i = 0; i < NUMBER_OF_DICE; i++) {
+    if (diceCounts[i] === 2) {
+      pairCount++;
+    }
+  }
+  if (pairCount === 3) {
+    scoringOptions.push({ roll: "Three Pairs", score: 1500 });
+  }
+
+  // Three of a kind or more
+  for (i = 1; i < NUMBER_OF_DICE; i++) {
+    const dieCount = diceCounts[i];
+    if (dieCount >= 3) {
+      if (i < 4) {
+        // Twos, threes, fours
+        scoringOptions.push({
+          roll: `${dieCount} ${numberToWords.toWords(i + 1)}s`,
+          score: i * 100 * (dieCount - 2),
+        });
+      } else if (i === 5) {
+        // Sixes
+        scoringOptions.push({
+          roll: `${dieCount} ${numberToWords.toWords(i + 1)}es`,
+          score: i * 100 * (dieCount - 2),
+        });
+      }
+    }
+  }
+
+  // Ones and Fives
+  switch (diceCounts[0]) {
+    case 0:
+      break;
+    case 1:
+      scoringOptions.push({ roll: "Single one", score: 100 });
+      break;
+    case 2:
+      scoringOptions.push({ roll: `${diceCounts[0]} ones`, score: 200 });
+      break;
+    default:
+      scoringOptions.push({
+        roll: `${diceCounts[0]} ones`,
+        score: 1000 * (diceCounts[0] - 2),
+      });
+      break;
+  }
+
+  switch (diceCounts[4]) {
+    case 0:
+      break;
+    case 1:
+      scoringOptions.push({ roll: "Single five", score: 50 });
+      break;
+    case 2:
+      scoringOptions.push({ roll: `${diceCounts[4]} fives`, score: 100 });
+      break;
+    default:
+      scoringOptions.push({
+        roll: `${diceCounts[4]} fives`,
+        score: 500 * (diceCounts[4] - 2),
+      });
+      break;
+  }
+
+  if (scoringOptions.length === 0) {
+    let chosenDiceLength = 0;
+    let unavailableDice = 0;
+    for (let i = 0; i < NUMBER_OF_DICE; i++) {
+      chosenDiceLength += diceCounts[i];
+      if (!gameState.dice[i].available) {
+        unavailableDice++;
+      }
+    }
+    if (chosenDiceLength === NUMBER_OF_DICE) {
+      scoringOptions.push({ roll: "No scoring dice", score: 500 });
+    } else if (chosenDiceLength + unavailableDice === 6) {
+      scoringOptions.push("Zilch!");
+      io.emit("enableZilch");
+    } else {
+      scoringOptions.push("Choose some dice to see your options");
+    }
+  }
+
+  return scoringOptions;
 };
 
 http.listen(3000, () => {
