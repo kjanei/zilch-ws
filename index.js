@@ -155,8 +155,7 @@ io.on("connection", (socket) => {
       } else if (chosenDiceLength + unavailableDice === 6) {
         // After three consecutive zilch counts, lose 500 points ***
         scoringOptions.push("Zilch!");
-        socket.emit("enableZilch");
-        socket.broadcast.emit("enableZilch");
+        io.emit("enableZilch");
         gameState.consecutiveZilchCounter[gameState.currentPlayer - 1]++;
       } else {
         scoringOptions.push("Choose some dice to see your options");
@@ -170,6 +169,23 @@ io.on("connection", (socket) => {
     enableCashIn();
 
     io.emit("scoringOptions", JSON.stringify(scoringOptions));
+  });
+
+  socket.on("cashDice", () => {
+    gameState.score[gameState.currentPlayer - 1] +=
+      gameState.potentialRollScore + gameState.accumulatedPoints;
+    gameState.currentPlayer == 1
+      ? io.emit("p1Score", gameState.score[gameState.currentPlayer - 1])
+      : io.emit("p2Score", gameState.score[gameState.currentPlayer - 1]);
+    gameState.currentPlayer =
+      gameState.currentPlayer < gameState.numberOfPlayers
+        ? gameState.currentPlayer + 1
+        : 1;
+    gameState.accumulatedPoints = 0;
+    gameState.potentialRollScore = 0;
+    gameState.dice = rollDice();
+    io.emit("resetCheckboxes");
+    io.emit("gameStateUpdate", gameState);
   });
 });
 
@@ -191,6 +207,7 @@ const createNewGame = (
     score: [0, 0], // Current (banked) score of both players
     consecutiveZilchCounter: [0, 0],
     scoreLimit, // The score limit for this game.
+    numberOfPlayers,
   };
 };
 

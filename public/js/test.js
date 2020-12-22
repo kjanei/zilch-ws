@@ -2,6 +2,7 @@ $(() => {
   let socket = io();
   let playerNumber = null;
   let gameState = null;
+  const NUMBER_OF_DICE = 6;
 
   // Update status
   socket.on("status", (msg) => {
@@ -14,6 +15,14 @@ $(() => {
 
   socket.on("scoringOptions", (msg) => {
     $("#scoringOptions").val(msg);
+  });
+
+  socket.on("p1Score", (msg) => {
+    $("#p1Score").val(msg);
+  });
+
+  socket.on("p2Score", (msg) => {
+    $("#p2Score").val(msg);
   });
 
   // Listen to player number assignments
@@ -32,6 +41,12 @@ $(() => {
     setDice(gameState.dice);
   });
 
+  socket.on("resetCheckboxes", () => {
+    for (let i = 0; i < NUMBER_OF_DICE; i++) {
+      document.getElementById(`dice${i}`).checked = false;
+    }
+  });
+
   const setDice = (dice) => {
     for (let i = 0; i < dice.length; i++) {
       let die = dice[i];
@@ -43,17 +58,16 @@ $(() => {
     }
     document.getElementById("rollDice").disabled =
       playerNumber !== gameState.currentPlayer;
-    document.getElementById("cashDice").disabled =
-      playerNumber !== gameState.currentPlayer;
   };
 
   socket.on("enableCashIn", () => {
-    document.getElementById("cashDice").disabled = false;
+    document.getElementById("cashDice").disabled =
+      playerNumber !== gameState.currentPlayer;
   });
 
   $("#rollDice").click(() => {
     let dice = [];
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < NUMBER_OF_DICE; i++) {
       const checkBox = document.getElementById(`dice${i}`);
       dice[i] = checkBox.checked;
     }
@@ -63,19 +77,20 @@ $(() => {
   });
 
   $("#cashDice").click(() => {
-    let dice = [];
-    for (let i = 0; i < 6; i++) {
-      const checkBox = document.getElementById(`dice${i}`);
-      dice[i] = checkBox.checked;
-    }
-    socket.emit("cashDice", dice);
+    // let dice = [];
+    // for (let i = 0; i < 6; i++) {
+    //   const checkBox = document.getElementById(`dice${i}`);
+    //   dice[i] = checkBox.checked;
+    // }
+    socket.emit("cashDice");
+    // socket.emit("cashDice", dice);
     socket.emit("status", "Cashed in");
   });
 
   $("input:checkbox").change(() => {
     let chosenDice = [];
     let sentDice = [];
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < NUMBER_OF_DICE; i++) {
       const checkBox = document.getElementById(`dice${i}`);
       sentDice.push({ id: `dice${i}`, checked: checkBox.checked });
       if (checkBox.checked && !checkBox.disabled) {
