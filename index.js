@@ -71,7 +71,7 @@ io.on("connection", (socket) => {
     const scoringOptions = getScoringOptions(chosenDice);
     enableCashIn(scoringOptions);
     enableRollDice();
-    enableFreeRoll(scoringOptions);
+    enableFreeRoll();
 
     io.emit("scoringOptions", JSON.stringify(scoringOptions));
   });
@@ -163,21 +163,30 @@ const enableCashIn = (scoringOptions) => {
     gameState.accumulatedPoints + gameState.potentialRollScore;
   io.emit("potentialScore", totalPotentialScore);
 
-  if (totalPotentialScore >= 300) {
+  if (
+    totalPotentialScore >= 300 &&
+    scoringOptions[0].score !== 0 &&
+    validDiceChosen()
+  ) {
     io.emit("enableCashIn");
   }
 };
 
 const enableRollDice = () => {
+  if (validDiceChosen()) {
+    io.emit("enableRollDice");
+  }
+};
+
+const validDiceChosen = () => {
   for (let i = 0; i < NUMBER_OF_DICE; i++) {
     if (gameState.dice[i].scored) {
-      io.emit("enableRollDice");
-      break;
+      return true;
     }
   }
 };
 
-const enableFreeRoll = (scoringOptions) => {
+const enableFreeRoll = () => {
   let scoredDiceCounter = 0;
   for (let i = 0; i < NUMBER_OF_DICE; i++) {
     if (gameState.dice[i].scored || !gameState.dice[i].available) {
