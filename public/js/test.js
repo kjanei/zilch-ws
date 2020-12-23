@@ -17,12 +17,14 @@ $(() => {
     $("#scoringOptions").val(msg);
   });
 
-  socket.on("p1Score", (score) => {
-    $("#p1Score").val(score);
+  socket.on("p1Score", (msg) => {
+    console.log(msg);
+    $("#p1Score").val(msg);
   });
 
-  socket.on("p2Score", (score) => {
-    $("#p2Score").val(score);
+  socket.on("p2Score", (msg) => {
+    console.log(msg);
+    $("#p2Score").val(msg);
   });
 
   // Listen to player number assignments
@@ -46,6 +48,7 @@ $(() => {
       document.getElementById(`dice${i}`).checked = false;
     }
     document.getElementById("rollDice").disabled = true;
+    document.getElementById("cashDice").disabled = true;
     document.getElementById("zilch").style.display = "none";
     document.getElementById("freeRoll").style.display = "none";
   });
@@ -59,6 +62,8 @@ $(() => {
   });
 
   const setDice = (dice) => {
+    document.getElementById("rollDice").className = "btn btn-secondary p-1 m-1";
+    document.getElementById("cashDice").className = "btn btn-secondary p-1 m-1";
     for (let i = 0; i < dice.length; i++) {
       let die = dice[i];
       const checkBox = document.getElementById(`dice${i}`);
@@ -74,11 +79,13 @@ $(() => {
   socket.on("enableCashIn", () => {
     document.getElementById("cashDice").disabled =
       playerNumber !== gameState.currentPlayer;
+    document.getElementById("cashDice").className = "btn btn-primary p-1 m-1";
   });
 
   socket.on("enableRollDice", () => {
     document.getElementById("rollDice").disabled =
       playerNumber !== gameState.currentPlayer;
+    document.getElementById("rollDice").className = "btn btn-primary p-1 m-1";
   });
 
   $("#rollDice").click(() => {
@@ -94,13 +101,7 @@ $(() => {
   });
 
   $("#cashDice").click(() => {
-    // let dice = [];
-    // for (let i = 0; i < 6; i++) {
-    //   const checkBox = document.getElementById(`dice${i}`);
-    //   dice[i] = checkBox.checked;
-    // }
     socket.emit("cashDice");
-    // socket.emit("cashDice", dice);
     socket.emit("status", "Cashed in");
   });
 
@@ -113,6 +114,8 @@ $(() => {
   });
 
   $("input:checkbox").change(() => {
+    document.getElementById("rollDice").className = "btn btn-secondary p-1 m-1";
+    document.getElementById("cashDice").className = "btn btn-secondary p-1 m-1";
     document.getElementById("rollDice").disabled = true;
     document.getElementById("cashDice").disabled = true;
     let chosenDice = [];
@@ -122,7 +125,6 @@ $(() => {
       sentDice.push({ id: `dice${i}`, checked: checkBox.checked });
       chosenDice[i] = checkBox.checked && gameState.dice[i].available;
     }
-    // console.log(chosenDice);
     socket.emit("scoreDice", chosenDice);
     socket.emit("diceChoices", sentDice);
   });

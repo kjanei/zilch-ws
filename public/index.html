@@ -1,66 +1,152 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <title>Zilch</title>
+    <meta charset="utf-8" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-giJF6kkoqNQ00vy+HMDP7azOuL0xtbfIcaT9wjKHr8RbDVddVHyTfAAsrekwKmP1"
+      crossorigin="anonymous"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
     <script src="js/test.js"></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-ygbV9kiqUc6oa4msXn9868pTtWMgiQaeYH7/t7LECLbyPA2x65Kgf80OJFdroafW"
+      crossorigin="anonymous"
+    ></script>
   </head>
-  <body>
-    Status:
-    <br />
-    <textarea
-      rows="10"
-      cols="30"
-      disabled
-      id="status"
-      value="initial state"
-    ></textarea>
-    <br />
-    <br />
-    Scoring Options:
-    <br />
-    <textarea rows="10" cols="35" disabled id="scoringOptions"></textarea>
-    <br />
-    <br />
-    <input type="checkbox" id="dice0" name="dice0" disabled />
-    <label for="dice0" id="label0">Waiting to roll..</label>
-    <br />
-    <input type="checkbox" id="dice1" name="dice1" disabled />
-    <label for="dice1" id="label1">Waiting to roll..</label>
-    <br />
-    <input type="checkbox" id="dice2" name="dice2" disabled />
-    <label for="dice2" id="label2">Waiting to roll..</label>
-    <br />
-    <input type="checkbox" id="dice3" name="dice3" disabled />
-    <label for="dice3" id="label3">Waiting to roll..</label>
-    <br />
-    <input type="checkbox" id="dice4" name="dice4" disabled />
-    <label for="dice4" id="label4">Waiting to roll..</label>
-    <br />
-    <input type="checkbox" id="dice5" name="dice5" disabled />
-    <label for="dice5" id="label5">Waiting to roll..</label>
-    <br />
-    <br />
-    <button id="freeRoll" style="display: none">Free Roll!</button>
-    <br />
-    <button id="rollDice" disabled>Submit dice selection & roll dice</button>
-    <br />
-    <button id="cashDice" disabled>Submit dice selection & cash in dice</button>
-    <br />
-    <button id="zilch" style="display: none">Zilch!</button>
-    <br />
-    <br />
-    <p>
-      <!-- Current turn score: <span id="currentScore">0</span> -->
-      <!-- <br /> -->
-      Current turn score with selection: <span id="potentialScore">0</span>
-    </p>
-    <p>Player number: <span id="playerNumber">Unassigned</span></p>
-    <label for="p1Score">Player 1 score: </label>
-    <input type="text" disabled id="p1Score" value="0" />
-    <br />
-    <label for="p2Score">Player 2 score: </label>
-    <input type="text" disabled id="p2Score" value="0" />
+  <body style="background-color: silver">
+    <div class="container mt-3">
+      <div class="row">
+        <div class="col">
+          <label for="status">Status:</label>
+          <br />
+          <textarea
+            rows="10"
+            cols="50"
+            disabled
+            id="status"
+            value="initial state"
+          ></textarea>
+        </div>
+        <br />
+        <br />
+        <div class="col">
+          <label for="scoringOptions">Scoring Options:</label>
+          <br />
+          <textarea rows="10" cols="50" disabled id="scoringOptions"></textarea>
+        </div>
+      </div>
+      <br />
+      <br />
+      <div class="row">
+        <div class="col-2 mx-auto">
+          <div class="flex-row">
+            <input
+              class="form-check-input h4"
+              type="checkbox"
+              id="dice0"
+              name="dice0"
+              disabled
+            />
+            <label class="h5 mt-1" for="dice0" id="label0"
+              >Waiting to roll..</label
+            >
+          </div>
+          <div class="flex-row">
+            <input
+              class="form-check-input h4"
+              type="checkbox"
+              id="dice1"
+              name="dice1"
+              disabled
+            />
+            <label class="h5 mt-1" for="dice1" id="label1"
+              >Waiting to roll..</label
+            >
+          </div>
+          <div class="flex-row">
+            <input
+              class="form-check-input h4"
+              type="checkbox"
+              id="dice2"
+              name="dice2"
+              disabled
+            />
+            <label class="h5 mt-1" for="dice2" id="label2"
+              >Waiting to roll..</label
+            >
+          </div>
+          <div class="flex-row">
+            <input
+              class="form-check-input h4"
+              type="checkbox"
+              id="dice3"
+              name="dice3"
+              disabled
+            />
+            <label class="h5 mt-1" for="dice3" id="label3"
+              >Waiting to roll..</label
+            >
+          </div>
+          <div class="flex-row">
+            <input
+              class="form-check-input h4"
+              type="checkbox"
+              id="dice4"
+              name="dice4"
+              disabled
+            />
+            <label class="h5 mt-1" for="dice4" id="label4"
+              >Waiting to roll..</label
+            >
+          </div>
+          <div class="flex-row">
+            <input
+              class="form-check-input h4"
+              type="checkbox"
+              id="dice5"
+              name="dice5"
+              disabled
+            />
+            <label class="h5 mt-1" for="dice5" id="label5"
+              >Waiting to roll..</label
+            >
+          </div>
+        </div>
+        <div class="col-4 my-auto">
+          <button class="btn btn-primary" id="freeRoll" style="display: none">
+            Free Roll!
+          </button>
+          <button class="btn btn-secondary p-1 m-1" id="rollDice" disabled>
+            Submit dice selection & roll dice
+          </button>
+          <br />
+          <button class="btn btn-secondary p-1 m-1" id="cashDice" disabled>
+            Submit dice selection & cash in dice
+          </button>
+          <br />
+          <button class="btn btn-primary" id="zilch" style="display: none">
+            Zilch!
+          </button>
+        </div>
+        <div class="col">
+          <p>
+            Current turn score with selection:
+            <span id="potentialScore">0</span>
+          </p>
+          <p>Player number: <span id="playerNumber">Unassigned</span></p>
+          <label for="p1Score">Player 1 score: </label>
+          <input type="text" disabled id="p1Score" value="0" />
+          <br />
+          <label for="p2Score">Player 2 score: </label>
+          <input type="text" disabled id="p2Score" value="0" />
+        </div>
+      </div>
+    </div>
   </body>
 </html>

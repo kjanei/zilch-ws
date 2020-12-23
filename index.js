@@ -87,8 +87,8 @@ io.on("connection", (socket) => {
       gameState.potentialRollScore + gameState.accumulatedPoints;
     const currentPlayerScore = gameState.score[gameState.currentPlayer - 1];
     gameState.currentPlayer == 1
-      ? io.emit("p1Score", gameState.score[currentPlayerScore])
-      : io.emit("p2Score", gameState.score[currentPlayerScore]);
+      ? io.emit("p1Score", currentPlayerScore)
+      : io.emit("p2Score", currentPlayerScore);
 
     // If the current player reached the score limit the game is over
     // If not, it is the next player's turn
