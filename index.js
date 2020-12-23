@@ -111,8 +111,8 @@ io.on("connection", (socket) => {
       const currentPlayerScore = gameState.score[gameState.currentPlayer - 1];
       gameState.consecutiveZilchCounter[gameState.currentPlayer - 1] = 0;
       gameState.currentPlayer == 1
-        ? io.emit("p1Score", gameState.score[currentPlayerScore])
-        : io.emit("p2Score", gameState.score[currentPlayerScore]);
+        ? io.emit("p1Score", currentPlayerScore)
+        : io.emit("p2Score", currentPlayerScore);
     }
     nextPlayerTurn();
   });
