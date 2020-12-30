@@ -58,7 +58,6 @@ io.on("connection", (socket) => {
       )
         gameState.dice[i].available = false;
     }
-    io.emit("resetCheckboxes");
 
     gameState.accumulatedPoints += gameState.potentialRollScore;
     gameState.potentialRollScore = 0;
@@ -120,7 +119,6 @@ io.on("connection", (socket) => {
   // Adds up accumulated points and rerolls all dice for the current player
   socket.on("freeRoll", () => {
     gameState.accumulatedPoints += gameState.potentialRollScore;
-    io.emit("resetCheckboxes");
     io.emit("scoringOptions", "");
     gameState.dice = rollDice();
     io.emit("gameStateUpdate", gameState);
@@ -353,7 +351,6 @@ const nextPlayerTurn = (gameOver = false) => {
   gameState.accumulatedPoints = 0;
   gameState.potentialRollScore = 0;
   io.emit("potentialScore", gameState.potentialRollScore);
-  io.emit("resetCheckboxes");
   io.emit("scoringOptions", "");
 
   // If the score limit has not been reached, it becomes the next player's turn
