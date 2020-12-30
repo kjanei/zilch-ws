@@ -60,7 +60,7 @@ io.on("connection", (socket) => {
     }
     io.emit("resetCheckboxes");
 
-    addPoints();
+    gameState.accumulatedPoints += gameState.potentialRollScore;
     gameState.potentialRollScore = 0;
 
     gameState.dice = rollDice(gameState.dice);
@@ -119,7 +119,7 @@ io.on("connection", (socket) => {
 
   // Adds up accumulated points and rerolls all dice for the current player
   socket.on("freeRoll", () => {
-    addPoints();
+    gameState.accumulatedPoints += gameState.potentialRollScore;
     io.emit("resetCheckboxes");
     io.emit("scoringOptions", "");
     gameState.dice = rollDice();
@@ -395,10 +395,6 @@ const addAllDice = () => {
   for (i = 0; i < NUMBER_OF_DICE; i++) {
     gameState.dice[i].scored = false;
   }
-};
-
-const addPoints = () => {
-  gameState.accumulatedPoints += gameState.potentialRollScore;
 };
 
 http.listen(3000, () => {
