@@ -43,16 +43,6 @@ $(() => {
     setDice(gameState.dice);
   });
 
-  socket.on("resetCheckboxes", () => {
-    for (let i = 0; i < NUMBER_OF_DICE; i++) {
-      document.getElementById(`dice${i}`).checked = false;
-    }
-    document.getElementById("rollDice").disabled = true;
-    document.getElementById("cashDice").disabled = true;
-    document.getElementById("zilch").style.display = "none";
-    document.getElementById("freeRoll").style.display = "none";
-  });
-
   socket.on("enableFreeRoll", () => {
     document.getElementById("freeRoll").style.display = "block";
     document.getElementById("freeRoll").disabled =
@@ -62,6 +52,10 @@ $(() => {
   });
 
   const setDice = (dice) => {
+    document.getElementById("rollDice").disabled = true;
+    document.getElementById("cashDice").disabled = true;
+    document.getElementById("zilch").style.display = "none";
+    document.getElementById("freeRoll").style.display = "none";
     document.getElementById("rollDice").className = "btn btn-secondary p-1 m-1";
     document.getElementById("cashDice").className = "btn btn-secondary p-1 m-1";
     for (let i = 0; i < dice.length; i++) {
@@ -70,6 +64,7 @@ $(() => {
       const label = document.getElementById(`label${i}`);
       checkBox.disabled =
         !die.available || playerNumber !== gameState.currentPlayer;
+      checkBox.checked = false;
       label.innerHTML = die.value;
     }
     // document.getElementById("rollDice").disabled =
