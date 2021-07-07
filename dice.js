@@ -213,7 +213,7 @@ const nextPlayerTurn = (gameOver = false) => {
     io.emit("gameStateUpdate", gameState);
   }
 };
-
+// TEST
 // Returns whether any of the dice chosen will give points
 const validDiceChosen = () => {
     for (let i = 0; i < NUMBER_OF_DICE; i++) {
