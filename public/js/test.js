@@ -90,13 +90,13 @@ $(() => {
       dice[i] = checkBox.checked;
     }
     console.log(dice);
-    socket.emit("rollDice", dice);
+    socket.emit("submitAndRollDice", dice);
     socket.emit("scoreDice", dice);
     socket.emit("status", "Submitted roll");
   });
 
   $("#cashDice").click(() => {
-    socket.emit("cashDice");
+    socket.emit("submitAndCashDice");
     socket.emit("status", "Cashed in");
   });
 
