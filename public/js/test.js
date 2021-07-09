@@ -39,7 +39,7 @@ $(() => {
     $("#status").val(`${JSON.stringify(game)}`);
     gameState = game;
     $("#currentScore").text(game.accumulatedPoints);
-
+    $("#potentialScore").text(game.potentialRollScore);
     setDice(gameState.dice);
   });
 

@@ -70,6 +70,10 @@ const setUpSocketEvents = (io) => {
       io.emit("status", "Rolling dice.");
 
       disableUsedDice(gameState);
+
+      gameState.accumulatedPoints += gameState.potentialRollScore;
+      gameState.potentialRollScore = 0;
+
       gameState.dice = rollDice(gameState.dice);
 
       io.emit("gameStateUpdate", gameState);
@@ -102,10 +106,14 @@ const setUpSocketEvents = (io) => {
       // If not, it is the next player's turn
       if (currentPlayerScore >= gameState.scoreLimit) {
         io.emit("status", "Player " + gameState.currentPlayer + " wins!");
-        nextPlayerTurn((gameOver = true));
+        // Once the score limit has been reached, the next player(s) get to take one turn to try to beat the leader.
+        clearTurnState(gameState);
+        nextPlayerTurn(gameState);
       } else {
         nextPlayerTurn();
       }
+      io.emit("scoringOptions", "");
+      io.emit("gameStateUpdate", gameState);
     });
 
     // Increments zilch counter and starts the next player's turn
@@ -123,6 +131,8 @@ const setUpSocketEvents = (io) => {
           : io.emit("p2Score", currentPlayerScore);
       }
       nextPlayerTurn();
+      io.emit("potentialScore", gameState.potentialRollScore);
+      io.emit("scoringOptions", "");
     });
 
     // Adds up accumulated points and rerolls all dice for the current player

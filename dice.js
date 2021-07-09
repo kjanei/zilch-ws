@@ -197,23 +197,26 @@ const getScoringOptions = (chosenDice) => {
 };
 
 // Changes to the next player's turn
-const nextPlayerTurn = (gameOver = false) => {
-  gameState.accumulatedPoints = 0;
-  gameState.potentialRollScore = 0;
-  io.emit("potentialScore", gameState.potentialRollScore);
-  io.emit("scoringOptions", "");
-
+const nextPlayerTurn = (gameState) => {
   // If the score limit has not been reached, it becomes the next player's turn
-  if (!gameOver) {
-    gameState.currentPlayer =
+  gameState.accumulatedPoints = 0;
+  gameState.potentialRollScore = 0;  
+  gameState.currentPlayer =
       gameState.currentPlayer < gameState.numberOfPlayers
         ? gameState.currentPlayer + 1
         : 1;
     gameState.dice = rollDice();
-    io.emit("gameStateUpdate", gameState);
-  }
 };
-// TEST
+
+/*
+while(nextPlayer.score < gameState.scoreLimit) {
+  clearTurnState();
+  nextPlayerTurn();
+}
+
+*/
+
+
 // Returns whether any of the dice chosen will give points
 const validDiceChosen = () => {
     for (let i = 0; i < NUMBER_OF_DICE; i++) {
@@ -254,7 +257,7 @@ const resetScoredDice = () => {
   }
 };
 
-// Sets dice that have been previously used in a combo in the same turn to unavailable
+// Sets dice that have been previously used in a combo in the same turn to be unavailable
 const disableUsedDice = (gameState) => {
     for (let i = 0; i < NUMBER_OF_DICE; i++) {
         if (
@@ -264,9 +267,7 @@ const disableUsedDice = (gameState) => {
             )
             gameState.dice[i].available = false;
         }
-    
-    gameState.accumulatedPoints += gameState.potentialRollScore;
-    gameState.potentialRollScore = 0;
+
 };
 
 // Enables the Roll Dice button when at least one valid dice has been chosen this roll. 
