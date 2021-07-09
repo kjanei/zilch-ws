@@ -35,8 +35,8 @@ const {
 // Cheat sheet for socket.io event emission:
 // https://socket.io/docs/v3/emit-cheatsheet/index.html
 const setUpSocketEvents = (io) => {
-  const connectedUsers = 0;
-  const gameState = {};
+  connectedUsers = 0;
+  gameState = {};
 
   io.on("connection", (socket) => {
     // On connection, increment the count of connected users and set up socket events.
@@ -69,24 +69,31 @@ const setUpSocketEvents = (io) => {
     socket.on("submitAndRollDice", (selectedDice) => {
       io.emit("status", "Rolling dice.");
 
-      disableUsedDice(gameState);
+      disableUsedDice(selectedDice, gameState);
 
       gameState.accumulatedPoints += gameState.potentialRollScore;
       gameState.potentialRollScore = 0;
 
-      gameState.dice = rollDice(gameState.dice);
+      gameState.dice = rollDice(gameState);
 
       io.emit("gameStateUpdate", gameState);
     });
 
     // Gets potential scores for dice and enables buttons based on points and checkbox requirements
     socket.on("scoreDice", (chosenDice) => {
-      const scoringOptions = getScoringOptions(chosenDice);
+      let scoringOptions = getScoringOptions(chosenDice, gameState);
 
-      enableCashIn(scoringOptions);
-      enableRollDice();
-      enableFreeRoll();
+      if (enableCashIn(scoringOptions, gameState)) io.emit("enableCashIn");
 
+      io.emit(
+        "potentialScore",
+        gameState.accumulatedPoints + gameState.potentialRollScore
+      );
+
+      // Checks eligibility of button appearances
+      if (enableRollDice(gameState)) io.emit("enableRollDice");
+      if (enableFreeRoll(gameState) === 6) io.emit("enableFreeRoll");
+      if (scoringOptions[0].roll === "Zilch!") io.emit("enableZilch");
       io.emit("scoringOptions", JSON.stringify(scoringOptions));
     });
 
@@ -107,10 +114,10 @@ const setUpSocketEvents = (io) => {
       if (currentPlayerScore >= gameState.scoreLimit) {
         io.emit("status", "Player " + gameState.currentPlayer + " wins!");
         // Once the score limit has been reached, the next player(s) get to take one turn to try to beat the leader.
-        clearTurnState(gameState);
+        // clearTurnState(gameState);
         nextPlayerTurn(gameState);
       } else {
-        nextPlayerTurn();
+        nextPlayerTurn(gameState);
       }
       io.emit("scoringOptions", "");
       io.emit("gameStateUpdate", gameState);
@@ -130,9 +137,10 @@ const setUpSocketEvents = (io) => {
           ? io.emit("p1Score", currentPlayerScore)
           : io.emit("p2Score", currentPlayerScore);
       }
-      nextPlayerTurn();
+      nextPlayerTurn(gameState);
       io.emit("potentialScore", gameState.potentialRollScore);
       io.emit("scoringOptions", "");
+      io.emit("gameStateUpdate", gameState);
     });
 
     // Adds up accumulated points and rerolls all dice for the current player

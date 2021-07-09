@@ -24,9 +24,9 @@ const createNewGame = (
   };
 };
 
-
-const rollDice = (previousDice) => {
-  if (previousDice) {
+const rollDice = (gameState) => {
+  if (gameState) {
+    const previousDice = gameState.dice;
     // Previous dice are available
     return previousDice.map((die) => {
       if (die.available) {
@@ -53,7 +53,7 @@ const rollDice = (previousDice) => {
   return dice;
 };
 
-const enableCashIn = (scoringOptions) => {
+const enableCashIn = (scoringOptions, gameState) => {
   gameState.potentialRollScore = 0;
 
   if (scoringOptions[0].score !== undefined) {
@@ -61,26 +61,23 @@ const enableCashIn = (scoringOptions) => {
       gameState.potentialRollScore += scoringOptions[i].score;
     }
   }
-
   const totalPotentialScore =
     gameState.accumulatedPoints + gameState.potentialRollScore;
-  io.emit("potentialScore", totalPotentialScore);
-
   // Enables the Cash In button when at least 300 points have been
   // accumulated and at least one valid dice has been chosen this roll
-  if (
+  return (
     totalPotentialScore >= 300 &&
     scoringOptions[0].score !== 0 &&
-    validDiceChosen()
-  )
-    io.emit("enableCashIn");
+    validDiceChosen(gameState)
+  );
+  // io.emit("enableCashIn");
 };
 
 // Returns an array of ordered dice values for scoring
-const countDice = (dice) => {
+const countDice = (chosenDice, gameState) => {
   let scoringDiceArray = [0, 0, 0, 0, 0, 0];
-  for (i = 0; i < dice.length; i++) {
-    if (dice[i] && gameState.dice[i].available)
+  for (i = 0; i < chosenDice.length; i++) {
+    if (chosenDice[i] && gameState.dice[i].available)
       scoringDiceArray[gameState.dice[i].value - 1]++;
     // scoringDiceArray[dice[i].value - 1]++;
   }
@@ -88,18 +85,18 @@ const countDice = (dice) => {
 };
 
 // Returns a list of all possible scoring options given the chosen dice
-const getScoringOptions = (chosenDice) => {
+const getScoringOptions = (chosenDice, gameState) => {
   let scoringOptions = [];
   let diceStillAvailable = true;
-  const diceCounts = countDice(chosenDice);
-  resetScoredDice();
+  const diceCounts = countDice(chosenDice, gameState);
+  resetScoredDice(gameState);
 
   // One to six (req 6 dice)
   for (i = 0; i < NUMBER_OF_DICE; i++) {
     if (diceCounts[i] != 1) break;
     if (i === 5 && diceCounts[i] === 1) {
       scoringOptions.push({ roll: "One to Six", score: 1500 });
-      removeAllDice();
+      removeAllDice(removeAllDice);
       diceStillAvailable = false;
     }
   }
@@ -111,7 +108,7 @@ const getScoringOptions = (chosenDice) => {
   }
   if (pairCount === 3) {
     scoringOptions.push({ roll: "Three Pairs", score: 1500 });
-    removeAllDice();
+    removeAllDice(gameState);
     diceStillAvailable = false;
   }
 
@@ -183,11 +180,9 @@ const getScoringOptions = (chosenDice) => {
     }
     if (chosenDiceLength === NUMBER_OF_DICE) {
       scoringOptions.push({ roll: "No scoring dice", score: 500 });
-      removeAllDice();
+      removeAllDice(removeAllDice);
     } else if (chosenDiceLength + unavailableDice === 6) {
       scoringOptions.push({ roll: "Zilch!", score: 0 });
-      io.emit("enableZilch");
-      // removeAllDice();
     } else {
       scoringOptions.push("Choose some dice to see your options");
     }
@@ -200,12 +195,12 @@ const getScoringOptions = (chosenDice) => {
 const nextPlayerTurn = (gameState) => {
   // If the score limit has not been reached, it becomes the next player's turn
   gameState.accumulatedPoints = 0;
-  gameState.potentialRollScore = 0;  
+  gameState.potentialRollScore = 0;
   gameState.currentPlayer =
-      gameState.currentPlayer < gameState.numberOfPlayers
-        ? gameState.currentPlayer + 1
-        : 1;
-    gameState.dice = rollDice();
+    gameState.currentPlayer < gameState.numberOfPlayers
+      ? gameState.currentPlayer + 1
+      : 1;
+  gameState.dice = rollDice();
 };
 
 /*
@@ -216,15 +211,14 @@ while(nextPlayer.score < gameState.scoreLimit) {
 
 */
 
-
 // Returns whether any of the dice chosen will give points
-const validDiceChosen = () => {
-    for (let i = 0; i < NUMBER_OF_DICE; i++) {
-      if (gameState.dice[i].scored) {
-        return true;
-      }
+const validDiceChosen = (gameState) => {
+  for (let i = 0; i < NUMBER_OF_DICE; i++) {
+    if (gameState.dice[i].scored) {
+      return true;
     }
-  };
+  }
+};
 
 // Sets the scored value for all dice used in the current combination false so they won't be scored again
 const removeScoredDice = (diceValue, iterations, chosenDice) => {
@@ -243,7 +237,7 @@ const removeScoredDice = (diceValue, iterations, chosenDice) => {
 };
 
 // Sets the scored value for all dice false, meaning they've all been scored (for combinations required all 6 dice)
-const removeAllDice = () => {
+const removeAllDice = (gameState) => {
   for (i = 0; i < NUMBER_OF_DICE; i++) {
     gameState.dice[i].scored = true;
   }
@@ -251,52 +245,50 @@ const removeAllDice = () => {
 
 // Resets the scored value to false to allow for scoring
 // ** I don't understand why the dice scored attribute are being reset to false every time we try to get the scoring options
-const resetScoredDice = () => {
+const resetScoredDice = (gameState) => {
   for (i = 0; i < NUMBER_OF_DICE; i++) {
     gameState.dice[i].scored = false;
   }
 };
 
 // Sets dice that have been previously used in a combo in the same turn to be unavailable
-const disableUsedDice = (gameState) => {
-    for (let i = 0; i < NUMBER_OF_DICE; i++) {
-        if (
-            gameState.dice[i].available &&
-            selectedDice[i] &&
-            gameState.dice[i].scored
-            )
-            gameState.dice[i].available = false;
-        }
-
+const disableUsedDice = (selectedDice, gameState) => {
+  for (let i = 0; i < NUMBER_OF_DICE; i++) {
+    if (
+      gameState.dice[i].available &&
+      selectedDice[i] &&
+      gameState.dice[i].scored
+    )
+      gameState.dice[i].available = false;
+  }
 };
 
-// Enables the Roll Dice button when at least one valid dice has been chosen this roll. 
-// Also checks if the Free Roll button can be enabled
-const enableRollDice = () => {
-    if (validDiceChosen()) io.emit("enableRollDice");
-  };
+// Enables the Roll Dice button when at least one valid dice has been chosen this roll.
+const enableRollDice = (gameState) => {
+  return validDiceChosen(gameState);
+};
 
-  // Enables the Free Roll button when all the game dice are either
-  // currently used in a valid combination or unavailble
-  const enableFreeRoll = () => {
-    let scoredDiceCounter = 0;
-    for (let i = 0; i < NUMBER_OF_DICE; i++) {
-      if (gameState.dice[i].scored || !gameState.dice[i].available) {
-        scoredDiceCounter++;
-      } else {
-        continue;
-      }
-      if (scoredDiceCounter == 6) io.emit("enableFreeRoll");
+// Enables the Free Roll button when all the game dice are either
+// currently used in a valid combination or unavailble
+const enableFreeRoll = (gameState) => {
+  let scoredDiceCounter = 0;
+  for (let i = 0; i < NUMBER_OF_DICE; i++) {
+    if (gameState.dice[i].scored || !gameState.dice[i].available) {
+      scoredDiceCounter++;
+    } else {
+      continue;
     }
-  };
+  }
+  return scoredDiceCounter;
+};
 
-exports = {
-    nextPlayerTurn = nextPlayerTurn,
-    createNewGame = createNewGame,
-    enableRollDice = enableRollDice,
-    enableFreeRoll = enableFreeRoll,
-    enableCashIn = enableCashIn,
-    rollDice = rollDice,
-    disableUsedDice = disableUsedDice,
-    getScoringOptions = getScoringOptions
+module.exports = {
+  nextPlayerTurn: nextPlayerTurn,
+  createNewGame: createNewGame,
+  enableRollDice: enableRollDice,
+  enableFreeRoll: enableFreeRoll,
+  enableCashIn: enableCashIn,
+  rollDice: rollDice,
+  disableUsedDice: disableUsedDice,
+  getScoringOptions: getScoringOptions,
 };
