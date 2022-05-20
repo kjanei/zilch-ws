@@ -22,6 +22,11 @@ setUpSocketEvents(io);
 let gameState = null;
 let connectedUsers = 0;
 
-http.listen(3000, () => {
-  console.log("Listening on port 3000");
+let port = 3000;
+if(process.argv.port) {
+  port = process.argv.port
+}
+
+http.listen(port, () => {
+  console.log("Listening on port ", port);
 });
