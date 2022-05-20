@@ -1,42 +1,19 @@
 const {
   nextPlayerTurn,
   createNewGame,
-  enableRollDice,
   enableFreeRoll,
   rollDice,
   disableUsedDice,
   enableCashIn,
   getScoringOptions,
+  validDiceChosen
 } = require("./dice");
-
-/*  Game state reference
-    accumulatedPoints: 0, // The points accumulated, but not cashed in, on a specific turn. Only updated on banking.
-    potentialRollScore: 0,  // accumulatedPoints + anything the user has selected before they bank or roll again.
-    currentPlayer,
-    dice: [{
-      value: int,
-      available: bool, // Whether the die is available to be rolled again
-      scored: bool, // Whether the die has already been used for scoring
-    }],
-    history: [], // The history of moves played so far in the game
-    score: [0, 0], // Current (banked) score of both players
-    consecutiveZilchCounter: [0, 0],
-    scoreLimit, // The score limit for this game.
-    numberOfPlayers,
-
-    Understand:
-    currentPlayer, numberOfPlayers, scoreLimit, score, consecutiveZilchCounter
-
-    Unclear:
-    accumulatedPoints, potentialRollScore, dice, history
-
-*/
 
 // Cheat sheet for socket.io event emission:
 // https://socket.io/docs/v3/emit-cheatsheet/index.html
 const setUpSocketEvents = (io) => {
-  connectedUsers = 0;
-  gameState = {};
+  let connectedUsers = 0;
+  let gameState = {};
 
   io.on("connection", (socket) => {
     // On connection, increment the count of connected users and set up socket events.
@@ -91,7 +68,7 @@ const setUpSocketEvents = (io) => {
       );
 
       // Checks eligibility of button appearances
-      if (enableRollDice(gameState)) io.emit("enableRollDice");
+      if (validDiceChosen(gameState)) io.emit("enableRollDice");
       if (enableFreeRoll(gameState) === 6) io.emit("enableFreeRoll");
       if (scoringOptions[0].roll === "Zilch!") io.emit("enableZilch");
       io.emit("scoringOptions", JSON.stringify(scoringOptions));

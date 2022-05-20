@@ -3,8 +3,6 @@ const path = require("path");
 const app = express();
 const setUpSocketEvents = require("./socket").setUp;
 
-// console.log(setUpSocketEvents);
-
 // https://stackoverflow.com/a/36041093
 // Express Middleware for serving static files
 app.use(express.static(path.join(__dirname, "public")));
@@ -18,15 +16,10 @@ const http = require("http").createServer(app);
 const io = require("socket.io")(http);
 setUpSocketEvents(io);
 
-// Global state - should eventually be moved into "rooms"
-let gameState = null;
-let connectedUsers = 0;
+let port = process.argv[2] || 3000;
 
-let port = 3000;
-if(process.argv.port) {
-  port = process.argv.port
-}
+let gameState = null;
 
 http.listen(port, () => {
-  console.log("Listening on port ", port);
+  console.log("Listening on port", port);
 });
